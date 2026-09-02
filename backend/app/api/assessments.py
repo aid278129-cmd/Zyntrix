@@ -194,3 +194,19 @@ async def chat_with_assessment(assessment_id: str, req: AssessmentChatRequest, d
     
     res_dict = AssessmentService.answer_assessment_question(assessment, req.message)
     return AssessmentChatResponse(**res_dict)
+
+
+@router.post("/demo/reset", response_model=AssessmentDetailResponse, summary="Reset/Initialize Golden SIH Demo Assessment")
+async def reset_golden_demo_assessment(db: AsyncSession = Depends(get_db)):
+    """Creates or resets the deterministic Golden SIH Demo Case without external network dependency."""
+    from backend.app.services.assessment.golden_demo import GOLDEN_DEMO_PRODUCT
+    req = AssessmentCreateRequest(**GOLDEN_DEMO_PRODUCT)
+    asm = await AssessmentService.create_assessment(db, req)
+    return await AssessmentService.get_assessment_detail(db, asm)
+
+
+@router.get("/evaluation/m5", summary="Run Comprehensive M5 Multi-Dimensional Evaluation")
+async def get_m5_evaluation_metrics():
+    """Execute evaluation over the 30 stratified benchmark cases and return honest empirical metrics."""
+    from backend.app.services.evaluation.m5_evaluator import run_m5_comprehensive_evaluation
+    return run_m5_comprehensive_evaluation()

@@ -7,6 +7,7 @@ import { KnowledgeBaseExplorer } from './components/KnowledgeBaseExplorer';
 import { ProductWorkspace } from './components/ProductWorkspace';
 import { RetrievalDebugPanel } from './components/RetrievalDebugPanel';
 import { AssessmentWorkspace } from './components/AssessmentWorkspace';
+import { EvaluationConsole } from './components/EvaluationConsole';
 import { StatusBadge } from './components/StatusBadge';
 import {
   ShieldAlert,
@@ -21,6 +22,7 @@ import {
   AlertCircle,
   ExternalLink,
   Sliders,
+  BarChart3,
 } from 'lucide-react';
 
 export default function App() {
@@ -63,12 +65,11 @@ export default function App() {
 
   const tabs = [
     { id: 'assessment', label: 'MSME Assessment Workspace (M4)', icon: FileCheck2 },
+    { id: 'evaluation', label: 'Evaluation Console & Audit (M5)', icon: BarChart3 },
     { id: 'knowledge', label: 'Verified BIS Knowledge Base (M1)', icon: BookOpen },
     { id: 'diagnostics', label: 'Architecture & Health', icon: Cpu },
     { id: 'dna', label: 'Product Workspace & Evidence Graph (M2)', icon: Dna },
     { id: 'retrieval', label: 'Hybrid Retrieval & Benchmark (M3)', icon: Sliders },
-    { id: 'citation', label: 'Citation Guard & Evidence', icon: ShieldAlert },
-    { id: 'passport', label: 'Compliance Passport', icon: FileCheck2 },
   ];
 
   const modules = [
@@ -180,6 +181,10 @@ export default function App() {
         {/* Tab Contents */}
         {activeTab === 'assessment' && (
           <AssessmentWorkspace />
+        )}
+
+        {activeTab === 'evaluation' && (
+          <EvaluationConsole />
         )}
 
         {activeTab === 'knowledge' && (
