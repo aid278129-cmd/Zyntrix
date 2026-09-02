@@ -1,13 +1,13 @@
-# Clause Retrieval Engine & Citation Object
+# Clause Retrieval Engine & Provenance Citations
 
-**Milestone**: M1 (Ingestion & Knowledge Base)  
+**Milestone**: M1.5 (Knowledge Trust & Governance Hardening)  
 **Author**: Team Zyntrix (SIH 26107)
 
 ---
 
-## 1. Retrieval Strategy
+## 1. Retrieval Strategy & Trust Policy
 
-The clause retrieval engine performs **Metadata-Filtered Semantic Search**:
+The retrieval engine provides **Trust-Gated Semantic Search**:
 ```
 User / System Query (e.g. "food contact stainless steel grade 304")
               │
@@ -15,44 +15,51 @@ User / System Query (e.g. "food contact stainless steel grade 304")
     [Query Embedding (384-d normalized vector)]
               │
               ▼
-    [SQL Metadata Filter] ──(WHERE verification_status = 'VERIFIED' AND status = 'ACTIVE')
+    [Trust Gate Enforcement]
+        ├── Active Compliance: WHERE verification_status = 'VERIFIED' AND status = 'ACTIVE'
+        └── Developer Mode: include_unverified = True
               │
               ▼
-    [Vector Similarity Scoring] ──(Cosine Similarity / pgvector operator)
+    [Vector Similarity Scoring] (Cosine Similarity)
               │
               ▼
-    [Provenance Citation Packaging] ──(Standard, Clause, Page, Exact Supporting Text)
+    [Provenance Citation Packaging] (Includes source_authority & verification_status)
 ```
 
 ---
 
-## 2. Provenance Citation Contract
+## 2. Default Backend Safety
 
-Every retrieved item is structured into a `ProvenanceCitation` object compatible with M0 Citation Guard:
+- `verified_only = True` is enforced by the backend endpoint `POST /api/v1/knowledge/search`.
+- Even if a frontend client omits the flag, the backend default rejects unverified knowledge for compliance claims.
+- `include_unverified = True` is only available for internal administrative and audit inspection.
+
+---
+
+## 3. Retrieval Result Structure with Trust Signals
+
 ```json
 {
-  "document_id": "doc-uuid-12345",
+  "clause_id": "cls-uuid-421",
+  "standard_id": "std-uuid-17526",
   "standard_number": "IS 17526:2021",
   "standard_title": "Commercial Beverage Coolers and Insulated Flasks — Specification",
   "clause_number": "4.2.1",
   "clause_title": "Stainless Steel Parts",
   "section": "Section 4",
   "page_number": 2,
+  "text_content": "All metallic parts in direct contact with liquid or food shall be manufactured from stainless steel conforming to Grade 304 of IS 6911 or superior grade.",
+  "similarity_score": 0.942,
   "verification_status": "VERIFIED",
-  "supporting_text": "All metallic parts in direct contact with liquid or food shall be manufactured from stainless steel conforming to Grade 304 of IS 6911 or superior grade."
-}
-```
-
----
-
-## 3. Retrieval API Endpoint
-
-`POST /api/v1/knowledge/search`
-```json
-{
-  "query": "thermal heat retention water temperature after 6 hours",
-  "standard_number": "IS 17526:2021",
-  "verified_only": true,
-  "top_k": 5
+  "source_authority": "BIS_OFFICIAL",
+  "citation": {
+    "document_id": "doc-uuid-12345",
+    "standard_number": "IS 17526:2021",
+    "clause_number": "4.2.1",
+    "page_number": 2,
+    "verification_status": "VERIFIED",
+    "source_authority": "BIS_OFFICIAL",
+    "supporting_text": "All metallic parts in direct contact with liquid or food..."
+  }
 }
 ```

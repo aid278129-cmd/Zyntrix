@@ -5,6 +5,8 @@ from sqlalchemy.orm import selectinload
 
 from backend.app.models.clause import Clause
 from backend.app.models.standard import Standard
+from backend.app.models.document import Document
+from backend.app.models.source import Source
 from backend.app.models.requirement import Requirement
 from backend.app.services.ingestion.embedder import default_embedding_provider, cosine_similarity
 from backend.app.schemas.clause import ClauseSearchResult, RequirementSchema
@@ -15,10 +17,17 @@ async def search_clauses(
     query: str,
     standard_number: Optional[str] = None,
     verified_only: bool = True,
+    include_unverified: bool = False,
     top_k: int = 5,
     min_score: float = 0.1,
 ) -> List[ClauseSearchResult]:
-    """Retrieve semantically and metadata-filtered clauses with page provenance citations and requirement linkages."""
+    """Retrieve semantically and metadata-filtered clauses with provenance citations.
+
+    Trust enforcement: verified_only=True is the safe backend default.
+    Unverified knowledge is only returned when include_unverified=True
+    (developer inspection mode). Never use unverified knowledge for
+    final compliance claims.
+    """
     query_vector = default_embedding_provider.embed_text(query)
 
     # Base query joined with Standard and preloading requirements
@@ -28,12 +37,16 @@ async def search_clauses(
         .options(selectinload(Clause.standard), selectinload(Clause.requirements))
     )
 
-    if verified_only:
+    # Trust enforcement: backend-safe verified-only default
+    if verified_only and not include_unverified:
         stmt = stmt.where(
             Clause.verification_status == "VERIFIED",
             Standard.verification_status == "VERIFIED",
             Standard.status == "ACTIVE",
         )
+    elif not include_unverified:
+        # Even without verified_only, exclude SUPERSEDED
+        stmt = stmt.where(Standard.status.in_(["ACTIVE", "REVISED"]))
 
     if standard_number:
         stmt = stmt.where(Standard.standard_number == standard_number)
@@ -55,9 +68,23 @@ async def search_clauses(
     scored_results.sort(key=lambda x: x[0], reverse=True)
     top_results = scored_results[:top_k]
 
+    # Resolve source authority for the document chain
     search_responses: List[ClauseSearchResult] = []
     for score, c in top_results:
         std = c.standard
+
+        # Determine source authority from document -> source chain
+        source_authority = None
+        if c.source_document_id:
+            doc_stmt = select(Document).where(Document.id == c.source_document_id)
+            doc_res = await db.execute(doc_stmt)
+            doc = doc_res.scalar_one_or_none()
+            if doc and doc.source_id:
+                src_stmt = select(Source).where(Source.id == doc.source_id)
+                src_res = await db.execute(src_stmt)
+                src = src_res.scalar_one_or_none()
+                if src:
+                    source_authority = src.authority_level
 
         req_schemas = [
             RequirementSchema(
@@ -70,11 +97,12 @@ async def search_clauses(
                 evidence_type=r.evidence_type,
                 test_method_reference=r.test_method_reference,
                 interpretation_status=r.interpretation_status,
+                verification_status=r.verification_status,
             )
             for r in c.requirements
         ]
 
-        # Standard Citation Object compatible with M0 Citation Guard
+        # Citation object with trust signals
         citation_obj = {
             "document_id": c.source_document_id,
             "standard_number": std.standard_number if std else "IS UNKNOWN",
@@ -86,6 +114,7 @@ async def search_clauses(
             "page_start": c.page_start,
             "page_end": c.page_end,
             "verification_status": c.verification_status,
+            "source_authority": source_authority,
             "supporting_text": c.text_content[:500],
         }
 
@@ -102,6 +131,7 @@ async def search_clauses(
                 text_content=c.text_content,
                 similarity_score=round(score, 4),
                 verification_status=c.verification_status,
+                source_authority=source_authority,
                 requirements=req_schemas,
                 citation=citation_obj,
             )

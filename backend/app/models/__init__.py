@@ -2,10 +2,14 @@ from backend.app.models.base import Base
 from backend.app.models.user import User
 from backend.app.models.product import Product
 from backend.app.models.product_attribute import ProductAttribute
+from backend.app.models.source import Source
 from backend.app.models.document import Document
 from backend.app.models.standard import Standard
 from backend.app.models.clause import Clause
 from backend.app.models.requirement import Requirement
+from backend.app.models.amendment import Amendment
+from backend.app.models.regulatory_instrument import RegulatoryInstrument
+from backend.app.models.verification_record import VerificationRecord
 from backend.app.models.test import StandardTest
 from backend.app.models.evidence import Evidence
 from backend.app.models.compliance_result import ComplianceResult
@@ -17,10 +21,14 @@ __all__ = [
     "User",
     "Product",
     "ProductAttribute",
+    "Source",
     "Document",
     "Standard",
     "Clause",
     "Requirement",
+    "Amendment",
+    "RegulatoryInstrument",
+    "VerificationRecord",
     "StandardTest",
     "Evidence",
     "ComplianceResult",

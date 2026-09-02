@@ -1,5 +1,5 @@
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, date
 from pydantic import BaseModel, ConfigDict
 
 
@@ -12,12 +12,17 @@ class DocumentRegistryResponse(BaseModel):
     file_hash: str
     document_type: str
     standard_number: Optional[str] = None
+    title: Optional[str] = None
     edition: Optional[str] = None
     revision: Optional[str] = None
+    publisher: Optional[str] = None
     source_url: Optional[str] = None
     page_count: Optional[int] = None
+    publication_date: Optional[date] = None
+    source_id: Optional[str] = None
     ingestion_status: str
     verification_status: str
+    verification_notes: Optional[str] = None
     created_at: datetime
     metadata_json: Dict[str, Any] = {}
 

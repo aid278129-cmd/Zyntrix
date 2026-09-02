@@ -1,56 +1,59 @@
-# Evaluation & Accuracy Framework
+# Evaluation, Benchmark Rigor & Accuracy Staging
 
-**Milestone**: M1 (Verified Ingestion & Benchmark Harness)  
-**Author**: Team Zyntrix (SIH 26107)
+**Milestone**: M1.5 (Knowledge Trust & Governance Hardening)  
+**Author**: Team Zyntrix (SIH Problem Statement 26107)
 
 ---
 
 ## 1. Context & Evaluator Directives
 
-In response to SIH evaluator feedback (*"validating the claimed accuracy, reducing dependence on LLM reasoning, and demonstrating the system with real BIS compliance cases"*), accuracy validation is designed as a core architectural discipline.
+In response to SIH evaluator feedback (*"validating the claimed accuracy, reducing dependence on LLM reasoning, and demonstrating the system with real BIS compliance cases"*), accuracy validation is maintained with strict scientific honesty.
 
-### Policy on Metrics:
-- **Zero Fabricated Metrics**: No generalized claims of accuracy are made without specifying sample size and test boundaries.
-- **Transparent Staging**: Clearly distinguish between initial single-case unit proof-of-concepts and multi-category statistical benchmarks.
+### Policy on Claims:
+- **Zero Fabricated Accuracy Claims**: We never claim generalized "100% accuracy" or "compliance certified" based on narrow test fixtures.
+- **Explicit Sample Size**: All metrics explicitly report the sample size ($N$).
+- **Distinction Between Unit Pipeline Proof and Multi-Category Accuracy**: An initial pipeline verification on a single representative case demonstrates technical feasibility, not production-wide accuracy.
 
 ---
 
-## 2. Evaluation Metrics & Benchmark Status
+## 2. Current Benchmark Staging Status (M1.5)
 
-> [!NOTE]
-> **Current Benchmark Scope (M1)**: Initial pipeline verification across **1 verified reference case** (`CASE-DRINKWARE-001` for **IS 17526:2021**). 100% retrieval was achieved on the specific tested clauses in this initial harness. Broader multi-standard evaluation across a larger test corpus is ongoing.
+> [!IMPORTANT]
+> **Initial Benchmark Scope**: $N = 1$ verified reference case (`CASE-DRINKWARE-001` for **IS 17526:2021**).
+> 
+> The initial benchmark verified that the pipeline successfully extracted and retrieved the tested target clauses (Clauses 4.2.1 and 5.4) from the fixture. Broader evaluation across multiple diverse BIS product categories is ongoing.
 
-| Evaluation Dimension | Target Metric | M1 Measured Result (N=1 Verified Case) | Benchmark Status | Target Milestone |
+| Evaluation Dimension | Target Metric | Measured Result ($N=1$ Reference Case) | Benchmark Scope & Staging | Target Milestone |
 |---|---|---|---|---|
-| **Product DNA Extraction** | Attribute Extraction Accuracy (%) | *Not measured* | Pipeline schema ready | M2 (Extraction Engine) |
-| **Standard Identification** | Precision on IS Number Matching | **100% (1/1 case)** | Verified on IS 17526:2021 fixture | M1 |
-| **Clause-Level Retrieval** | Recall@3 on Ground-Truth Clauses | **100% (Tested Clauses 4.2.1, 5.4 in top-3)** | Verified on initial Drinkware case | M1 |
-| **Applicability Decision** | Accuracy vs QCO Gazette Matrix | *Not measured* | Rule engine in development | M2 (Deterministic rules) |
-| **Citation Validity** | Unsupported Claim Rate (%) | **0% (1/1 case, all citations strictly verified)** | Contract verified | M1 (Citation Guard) |
-| **System Ingestion Throughput** | Pages Processed per Second | **~12 pages/sec** | Measured locally with PyMuPDF | M1 |
+| **Product DNA Extraction** | Attribute Extraction Accuracy (%) | *Not measured* | Pydantic schema validated; extraction engine pending | M2 (Extraction Engine) |
+| **Standard Identification** | IS Number Matching Precision | **100% ($1/1$ case)** | Single case unit validation on IS 17526:2021 fixture | M1.5 |
+| **Clause-Level Retrieval** | Recall@3 on Target Clauses | **100% on tested clauses ($2/2$)** | Clause 4.2.1 (Material) & Clause 5.4 (Thermal) retrieved in top-3 | M1.5 |
+| **Applicability Decision** | Accuracy vs QCO Gazette Schedule | *Not measured* | Deterministic rule engine pending | M2 (Rule Engine) |
+| **Citation Validity** | Unsupported Claim Rate (%) | **0% ($1/1$ case)** | All retrieved items mapped to page provenance | M1.5 (Citation Guard) |
+| **Ingestion Throughput** | Pages Processed per Second | **~12 pages/sec** | Measured locally with PyMuPDF layout parser | M1.5 |
 
 ---
 
-## 3. Ground Truth Test Dataset Structure
+## 3. Benchmark Dataset Structure
 
 ```
 data/
  ├── bis/standards/
- │    └── IS_17526_2021.pdf       # Authoritative BIS standard fixture
+ │    └── IS_17526_2021.pdf       # Structurally representative fixture (REQUIRES_REVIEW)
  ├── test_cases/
- │    └── drinkware_case_001.json # Verified ground-truth benchmark (N=1)
+ │    └── drinkware_case_001.json # Initial reference benchmark (N=1)
  └── evaluation/
 ```
 
 ---
 
-## 4. Implementation Status
+## 4. Path to Statistically Significant Evaluation (M2 / M3)
 
-### [IMPLEMENTED IN M1]
-- Ground-truth benchmark test case (`data/test_cases/drinkware_case_001.json`).
-- Automated retrieval evaluation test harness (`backend/tests/test_evaluation_framework.py`).
-- Exact matching of material (Clause 4.2.1) and thermal performance (Clause 5.4) requirements against IS 17526:2021.
-
-### [PLANNED FOR M2 / M3]
-- Expanding ground-truth suite to 10+ diverse real BIS product categories (e.g. Electrical Kettles `IS 302-2-15`, Footwear `IS 15844`, Cement, Toys) (M2).
-- Large-corpus Mean Reciprocal Rank (MRR) and Recall@K benchmarking across 1,000+ clauses (M3).
+1. **Category Expansion (M2)**: Expand benchmark cases from 1 to 10+ real BIS categories:
+   - Domestic Electrical Appliances (`IS 302-2-15` Electric Kettles)
+   - Footwear (`IS 15844` Sports Footwear)
+   - Toys Safety (`IS 9873`)
+   - Packaged Drinking Water (`IS 14543`)
+   - Cement (`IS 1489`)
+2. **Retrieval Metrics (M3)**: Implement Mean Reciprocal Rank (MRR@10) and Normalized Discounted Cumulative Gain (nDCG@5) across 1,000+ segmented clauses.
+3. **Double-Blind Evaluation (M3)**: Independent verification of system compliance outputs against certified BIS laboratory test reports.

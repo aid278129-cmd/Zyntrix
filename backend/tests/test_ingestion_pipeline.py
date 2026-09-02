@@ -1,4 +1,5 @@
 import os
+import tempfile
 import pytest
 from pathlib import Path
 
@@ -17,6 +18,33 @@ def test_sha256_calculation():
     sha256_hash = calculate_file_sha256(FIXTURE_PDF)
     assert len(sha256_hash) == 64
     assert isinstance(sha256_hash, str)
+
+
+def test_file_hash_determinism_and_uniqueness():
+    """Hash must be deterministic: same content -> same hash, different content -> different hash."""
+    with tempfile.NamedTemporaryFile("w", delete=False) as f1:
+        f1.write("BIS Standard IS 17526:2021 Content Sample A")
+        path1 = f1.name
+
+    with tempfile.NamedTemporaryFile("w", delete=False) as f2:
+        f2.write("BIS Standard IS 17526:2021 Content Sample A")
+        path2 = f2.name
+
+    with tempfile.NamedTemporaryFile("w", delete=False) as f3:
+        f3.write("Different content for IS 302-1 Electrical Safety")
+        path3 = f3.name
+
+    try:
+        hash1 = calculate_file_sha256(path1)
+        hash2 = calculate_file_sha256(path2)
+        hash3 = calculate_file_sha256(path3)
+
+        assert hash1 == hash2, "Same file content must produce identical SHA-256 hash"
+        assert hash1 != hash3, "Different file content must produce different SHA-256 hash"
+    finally:
+        os.unlink(path1)
+        os.unlink(path2)
+        os.unlink(path3)
 
 
 def test_pdf_extraction_page_preservation():

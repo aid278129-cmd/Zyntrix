@@ -37,6 +37,9 @@ from backend.app.schemas.clause import (
 )
 from backend.app.schemas.passport import CompliancePassportCard
 from backend.app.schemas.document import DocumentRegistryResponse, DocumentUploadResponse
+from backend.app.schemas.source import SourceResponse
+from backend.app.schemas.verification import VerificationRecordResponse
+from backend.app.schemas.knowledge_card import StandardKnowledgeCard
 
 __all__ = [
     "APIResponse",
@@ -71,4 +74,7 @@ __all__ = [
     "CompliancePassportCard",
     "DocumentRegistryResponse",
     "DocumentUploadResponse",
+    "SourceResponse",
+    "VerificationRecordResponse",
+    "StandardKnowledgeCard",
 ]

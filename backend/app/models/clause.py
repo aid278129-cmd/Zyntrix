@@ -5,7 +5,12 @@ from backend.app.models.base import Base
 
 
 class Clause(Base):
-    """Clause-level granularity representation within an Indian Standard."""
+    """Clause-level granularity representation within an Indian Standard.
+
+    Trust model: verification_status defaults to REQUIRES_REVIEW.
+    Segmentation confidence (segmentation_status) is separate from
+    source verification (verification_status).
+    """
 
     __tablename__ = "clauses"
 
@@ -23,8 +28,10 @@ class Clause(Base):
 
     # Segmentation audit: CONFIDENT | REQUIRES_REVIEW
     segmentation_status: Mapped[str] = mapped_column(String(50), default="CONFIDENT")
-    # Verification: VERIFIED | UNVERIFIED | SUPERSEDED | REQUIRES_REVIEW
-    verification_status: Mapped[str] = mapped_column(String(50), default="VERIFIED", index=True)
+
+    # Verification: UNVERIFIED | REQUIRES_REVIEW | VERIFIED | SUPERSEDED
+    # NOTE: Defaults to REQUIRES_REVIEW. AI extraction ≠ regulatory verification.
+    verification_status: Mapped[str] = mapped_column(String(50), default="REQUIRES_REVIEW", index=True)
 
     version: Mapped[str] = mapped_column(String(50), default="1.0")
     source_document_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("documents.id"), nullable=True)

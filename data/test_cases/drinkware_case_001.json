@@ -3,6 +3,8 @@
   "category": "Drinkware & Food Contact Containers",
   "product_name": "Double-Walled Stainless Steel Insulated Flask",
   "product_description": "750ml stainless steel vacuum insulated water flask with BPA-free polypropylene stopper and food-grade silicone gasket, designed for 24-hour temperature retention.",
+  "benchmark_scope": "Initial single-case verification benchmark (N=1). Not a statistically significant sample.",
+  "provenance_note": "Expected values are based on representative clause text from a programmatically generated IS 17526:2021 fixture PDF. The fixture is NOT sourced from an official BIS publication. Clause text is structurally representative but requires verification against an authentic source document.",
   "expected_attributes": {
     "product_name": "Double-Walled Stainless Steel Insulated Flask",
     "category": "Drinkware & Food Contact Containers",
@@ -66,7 +68,8 @@
       "document_type": "standard",
       "filename": "IS_17526_2021.pdf",
       "standard_number": "IS 17526:2021",
-      "verification_status": "VERIFIED"
+      "verification_status": "REQUIRES_REVIEW",
+      "provenance_note": "Programmatically generated fixture. Not sourced from official BIS publication."
     }
   ]
 }

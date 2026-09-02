@@ -17,7 +17,9 @@ class StandardBase(BaseModel):
     revision: Optional[str] = None
     version: str = "current"
     status: str = "ACTIVE"
-    verification_status: str = "VERIFIED"
+    verification_status: str = "UNVERIFIED"
+    supersedes: Optional[str] = None
+    superseded_by: Optional[str] = None
 
 
 class StandardCreate(StandardBase):

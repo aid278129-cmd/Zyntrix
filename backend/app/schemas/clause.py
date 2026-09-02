@@ -12,6 +12,7 @@ class RequirementSchema(BaseModel):
     evidence_type: Optional[str] = None
     test_method_reference: Optional[str] = None
     interpretation_status: str = "CONFIDENT"
+    verification_status: str = "REQUIRES_REVIEW"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -26,7 +27,7 @@ class ClauseBase(BaseModel):
     page_end: Optional[int] = None
     parent_clause_id: Optional[str] = None
     segmentation_status: str = "CONFIDENT"
-    verification_status: str = "VERIFIED"
+    verification_status: str = "REQUIRES_REVIEW"
     version: str = "1.0"
     metadata_json: Dict[str, Any] = Field(default_factory=dict)
 
@@ -56,6 +57,7 @@ class ClauseSearchQuery(BaseModel):
     query: str = Field(..., min_length=1, description="Semantic or keyword query")
     standard_number: Optional[str] = None
     verified_only: bool = True
+    include_unverified: bool = False  # Developer inspection mode
     top_k: int = Field(default=5, ge=1, le=50)
     category: Optional[str] = None
 
@@ -72,5 +74,6 @@ class ClauseSearchResult(BaseModel):
     text_content: str
     similarity_score: float
     verification_status: str
+    source_authority: Optional[str] = None  # M1.5: expose trust signal
     requirements: List[RequirementSchema] = Field(default_factory=list)
     citation: Dict[str, Any] = Field(default_factory=dict)

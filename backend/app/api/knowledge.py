@@ -1,13 +1,16 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from backend.app.database.session import get_db
 from backend.app.models.standard import Standard
 from backend.app.models.clause import Clause
 from backend.app.models.document import Document
+from backend.app.models.source import Source
+from backend.app.models.verification_record import VerificationRecord
+from backend.app.models.amendment import Amendment
 from backend.app.schemas.standard import StandardResponse, StandardDetailResponse
 from backend.app.schemas.clause import (
     ClauseResponse,
@@ -17,6 +20,14 @@ from backend.app.schemas.clause import (
     RequirementSchema,
 )
 from backend.app.schemas.document import DocumentRegistryResponse, DocumentUploadResponse
+from backend.app.schemas.source import SourceResponse
+from backend.app.schemas.verification import VerificationRecordResponse
+from backend.app.schemas.knowledge_card import (
+    StandardKnowledgeCard,
+    SourceSummary,
+    VersionInfo,
+    AmendmentSummary,
+)
 from backend.app.services.retrieval.clause_retriever import search_clauses
 from backend.app.services.ingestion.pipeline import ingest_standard_document, IngestionSummary
 from backend.app.services.ingestion.document_loader import save_uploaded_file
@@ -29,7 +40,7 @@ router = APIRouter(tags=["Knowledge Base & Standards"])
     "/knowledge/search",
     response_model=List[ClauseSearchResult],
     summary="Semantic & Filtered Clause Retrieval",
-    description="Retrieve verified BIS clauses matching a query with page provenance, similarity score, and Citation Guard objects.",
+    description="Retrieve verified BIS clauses matching a query. Backend enforces verified_only=True by default.",
 )
 async def search_knowledge_clauses(
     query: ClauseSearchQuery,
@@ -41,6 +52,7 @@ async def search_knowledge_clauses(
             query=query.query,
             standard_number=query.standard_number,
             verified_only=query.verified_only,
+            include_unverified=query.include_unverified,
             top_k=query.top_k,
         )
         return results
@@ -104,10 +116,104 @@ async def get_standard_detail(
 
 
 @router.get(
+    "/standards/{standard_id}/knowledge-card",
+    response_model=StandardKnowledgeCard,
+    summary="Standard Knowledge Card",
+    description="Consolidated knowledge card with source, version, amendments, and trust state from actual stored data.",
+)
+async def get_standard_knowledge_card(
+    standard_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        stmt = (
+            select(Standard)
+            .where(Standard.id == standard_id)
+            .options(selectinload(Standard.amendments))
+        )
+        result = await db.execute(stmt)
+        std = result.scalar_one_or_none()
+        if not std:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Standard '{standard_id}' not found")
+
+        # Count clauses
+        clause_count_stmt = select(func.count()).where(Clause.standard_id == std.id)
+        clause_count_res = await db.execute(clause_count_stmt)
+        clause_count = clause_count_res.scalar() or 0
+
+        # Resolve source and document info
+        source_summary = SourceSummary()
+        doc_hash = None
+        ingestion_status = None
+        provenance_notes = None
+
+        if std.source_document_id:
+            doc_stmt = select(Document).where(Document.id == std.source_document_id)
+            doc_res = await db.execute(doc_stmt)
+            doc = doc_res.scalar_one_or_none()
+            if doc:
+                doc_hash = doc.file_hash
+                ingestion_status = doc.ingestion_status
+                provenance_notes = doc.verification_notes
+                source_summary.publisher = doc.publisher
+                source_summary.url = doc.source_url
+
+                if doc.source_id:
+                    src_stmt = select(Source).where(Source.id == doc.source_id)
+                    src_res = await db.execute(src_stmt)
+                    src = src_res.scalar_one_or_none()
+                    if src:
+                        source_summary.authority = src.authority_level
+                        source_summary.source_type = src.source_type
+
+        amendments = [
+            AmendmentSummary(
+                amendment_number=a.amendment_number,
+                publication_date=a.publication_date,
+                effective_date=a.effective_date,
+                affected_clauses=a.affected_clauses,
+                description=a.description,
+                verification_status=a.verification_status,
+            )
+            for a in (std.amendments or [])
+        ]
+
+        return StandardKnowledgeCard(
+            standard_number=std.standard_number,
+            title=std.title,
+            status=std.status,
+            verification_status=std.verification_status,
+            category=std.category,
+            scheme=std.scheme,
+            scope=std.scope,
+            source=source_summary,
+            version_information=VersionInfo(
+                edition=std.edition,
+                revision=std.revision,
+                version=std.version,
+                publication_date=std.publication_date,
+                effective_from=std.effective_from,
+                effective_to=std.effective_to,
+                supersedes=std.supersedes,
+                superseded_by=std.superseded_by,
+            ),
+            amendments=amendments,
+            clause_count=clause_count,
+            document_hash=doc_hash,
+            ingestion_status=ingestion_status,
+            provenance_notes=provenance_notes,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning(f"Knowledge card database notice: {exc}")
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database currently unavailable")
+
+
+@router.get(
     "/standards/{standard_id}/clauses",
     response_model=List[ClauseResponse],
     summary="List Clauses for Standard",
-    description="Retrieve all segmented clauses and requirement mappings for an Indian Standard.",
 )
 async def get_standard_clauses(
     standard_id: str,
@@ -131,7 +237,6 @@ async def get_standard_clauses(
     "/clauses/{clause_id}",
     response_model=ClauseResponse,
     summary="Get Granular Clause by ID",
-    description="Retrieve exact text, page provenance, and requirement criteria for a single clause.",
 )
 async def get_clause_detail(
     clause_id: str,
@@ -159,7 +264,6 @@ async def get_clause_detail(
     "/documents",
     response_model=List[DocumentRegistryResponse],
     summary="List Document Registry",
-    description="Retrieve all ingested source documents, SHA-256 cryptographic hashes, and verification states.",
 )
 async def list_documents(
     db: AsyncSession = Depends(get_db),
@@ -173,17 +277,59 @@ async def list_documents(
         return []
 
 
+@router.get(
+    "/sources",
+    response_model=List[SourceResponse],
+    summary="List Source Registry",
+    description="Retrieve all registered knowledge sources with authority classification.",
+)
+async def list_sources(
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        stmt = select(Source).order_by(Source.created_at.desc())
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as exc:
+        logger.warning(f"Sources list database notice: {exc}")
+        return []
+
+
+@router.get(
+    "/verification-records",
+    response_model=List[VerificationRecordResponse],
+    summary="List Verification Records",
+    description="Retrieve verification audit trail distinguishing machine validation from source/human verification.",
+)
+async def list_verification_records(
+    entity_type: Optional[str] = None,
+    entity_id: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        stmt = select(VerificationRecord).order_by(VerificationRecord.created_at.desc())
+        if entity_type:
+            stmt = stmt.where(VerificationRecord.entity_type == entity_type)
+        if entity_id:
+            stmt = stmt.where(VerificationRecord.entity_id == entity_id)
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as exc:
+        logger.warning(f"Verification records database notice: {exc}")
+        return []
+
+
 @router.post(
     "/ingestion/upload",
     response_model=IngestionSummary,
     summary="Ingest Standard PDF Document",
-    description="Upload a BIS Standard PDF to process layout, extract clauses/requirements, compute vectors, and register.",
+    description="Upload a BIS Standard PDF. Default trust: INDEXED + REQUIRES_REVIEW (not VERIFIED).",
 )
 async def upload_and_ingest_document(
     file: UploadFile = File(...),
     standard_number: Optional[str] = Form(None),
     standard_title: Optional[str] = Form(None),
-    is_verified: bool = Form(True),
+    is_verified: bool = Form(False),
     db: AsyncSession = Depends(get_db),
 ):
     content = await file.read()

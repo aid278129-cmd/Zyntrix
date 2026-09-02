@@ -10,6 +10,8 @@ from backend.app.models.document import Document
 from backend.app.models.standard import Standard
 from backend.app.models.clause import Clause
 from backend.app.models.requirement import Requirement
+from backend.app.models.source import Source
+from backend.app.models.verification_record import VerificationRecord
 from backend.app.services.ingestion.document_loader import (
     calculate_file_sha256,
     register_document,
@@ -36,6 +38,62 @@ class IngestionSummary(BaseModel):
     ingestion_status: str
 
 
+async def _create_verification_record(
+    db: AsyncSession,
+    entity_type: str,
+    entity_id: str,
+    verification_status: str,
+    document_hash: Optional[str] = None,
+    source_authority: Optional[str] = None,
+    notes: Optional[str] = None,
+) -> None:
+    """Create a machine-validation verification record for an ingested entity."""
+    record = VerificationRecord(
+        entity_type=entity_type,
+        entity_id=entity_id,
+        verification_status=verification_status,
+        verified_by="SYSTEM_PIPELINE",
+        verification_method="MACHINE_VALIDATION",
+        source_authority=source_authority,
+        document_hash=document_hash,
+        notes=notes,
+    )
+    db.add(record)
+
+
+async def register_source(
+    db: AsyncSession,
+    name: str,
+    publisher: str,
+    source_type: str = "USER_PROVIDED",
+    authority_level: str = "UNVERIFIED",
+    source_url: Optional[str] = None,
+    access_method: str = "manual_upload",
+    notes: Optional[str] = None,
+) -> Source:
+    """Register or find an existing source in the source registry."""
+    # Check for existing source by name and publisher
+    stmt = select(Source).where(Source.name == name, Source.publisher == publisher)
+    result = await db.execute(stmt)
+    existing = result.scalar_one_or_none()
+    if existing:
+        return existing
+
+    source = Source(
+        name=name,
+        publisher=publisher,
+        source_type=source_type,
+        authority_level=authority_level,
+        source_url=source_url,
+        access_method=access_method,
+        notes=notes,
+    )
+    db.add(source)
+    await db.commit()
+    await db.refresh(source)
+    return source
+
+
 async def ingest_standard_document(
     db: AsyncSession,
     file_path: str,
@@ -43,9 +101,18 @@ async def ingest_standard_document(
     document_type: str = "standard",
     standard_number_override: Optional[str] = None,
     standard_title_override: Optional[str] = None,
-    is_verified: bool = True,
+    is_verified: bool = False,
+    source_type: str = "USER_PROVIDED",
+    source_url: Optional[str] = None,
+    publisher: Optional[str] = None,
 ) -> IngestionSummary:
-    """End-to-end ingestion pipeline transforming a standard document into structured clauses and vector embeddings."""
+    """End-to-end ingestion pipeline transforming a standard document into
+    structured clauses and vector embeddings.
+
+    Trust model: is_verified defaults to False. Ingested knowledge is
+    INDEXED + UNVERIFIED unless explicitly marked verified through
+    a controlled verification workflow. INDEXED ≠ VERIFIED.
+    """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Source file not found at {file_path}")
 
@@ -53,7 +120,24 @@ async def ingest_standard_document(
     file_size = os.path.getsize(file_path)
     file_hash = calculate_file_sha256(file_path)
 
-    verif_status = "VERIFIED" if is_verified else "UNVERIFIED"
+    # Trust state: default to REQUIRES_REVIEW unless explicitly verified
+    if is_verified:
+        verif_status = "VERIFIED"
+    else:
+        verif_status = "REQUIRES_REVIEW"
+
+    # Step 0: Register Source
+    source_name = standard_number_override or filename
+    source_publisher = publisher or "Unknown"
+    source = await register_source(
+        db=db,
+        name=source_name,
+        publisher=source_publisher,
+        source_type=source_type,
+        authority_level="AUTHORITATIVE" if source_type == "BIS_OFFICIAL" else "UNVERIFIED",
+        source_url=source_url,
+        access_method="cli_import",
+    )
 
     # Step 1: Register Document
     doc = await register_document(
@@ -68,7 +152,8 @@ async def ingest_standard_document(
         standard_number=standard_number_override,
         verification_status=verif_status,
     )
-
+    doc.source_id = source.id
+    doc.publisher = source_publisher
     doc.ingestion_status = "EXTRACTED"
     await db.commit()
 
@@ -112,7 +197,9 @@ async def ingest_standard_document(
         std.title = meta.title or std.title
         std.category = meta.category or std.category
         std.scope = meta.scope_summary or std.scope
-        std.verification_status = verif_status
+        # Do NOT auto-upgrade verification_status on re-ingestion
+        if is_verified:
+            std.verification_status = verif_status
         std.source_document_id = doc.id
         await db.commit()
         await db.refresh(std)
@@ -185,6 +272,7 @@ async def ingest_standard_document(
                 evidence_type=r.evidence_type,
                 test_method_reference=r.test_method_reference,
                 interpretation_status=r.interpretation_status,
+                verification_status=verif_status,
                 embedding=req_embedding,
             )
             db.add(req_orm)
@@ -193,8 +281,22 @@ async def ingest_standard_document(
     doc.ingestion_status = "INDEXED"
     await db.commit()
 
+    # Step 8: Create verification records (machine validation audit trail)
+    await _create_verification_record(
+        db, "document", doc.id, verif_status,
+        document_hash=file_hash,
+        source_authority=source.authority_level,
+        notes=f"Machine validation: PDF readable, {extraction.total_pages} pages extracted, {len(segmented_clauses)} clauses segmented.",
+    )
+    await _create_verification_record(
+        db, "standard", std.id, verif_status,
+        source_authority=source.authority_level,
+        notes=f"Standard metadata extracted from document. Source type: {source_type}.",
+    )
+    await db.commit()
+
     logger.info(
-        f"Ingestion complete: {meta.standard_number} ({len(segmented_clauses)} clauses, {total_reqs_count} reqs) -> INDEXED"
+        f"Ingestion complete: {meta.standard_number} ({len(segmented_clauses)} clauses, {total_reqs_count} reqs) -> INDEXED / {verif_status}"
     )
 
     return IngestionSummary(

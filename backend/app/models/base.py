@@ -24,3 +24,15 @@ class Base(DeclarativeBase):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
+    def __init__(self, **kwargs):
+        """Initialize instance and populate column defaults in Python memory."""
+        if hasattr(self, "__table__"):
+            for col in self.__table__.columns:
+                if col.key not in kwargs and col.default is not None:
+                    try:
+                        kwargs[col.key] = col.default.arg(None) if callable(col.default.arg) else col.default.arg
+                    except Exception:
+                        pass
+        for k, v in kwargs.items():
+            setattr(self, k, v)
