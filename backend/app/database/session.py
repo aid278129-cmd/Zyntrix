@@ -3,11 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy import text
 from backend.app.core.config import settings
 from backend.app.core.logging import logger
+from backend.app.models.base import Base
 
 # Create async engine with connection pooling
 engine = create_async_engine(
     settings.async_database_url,
-    echo=settings.DEBUG,
+    echo=False,
     future=True,
     pool_pre_ping=True,
     pool_size=10,
@@ -73,3 +74,13 @@ async def check_pgvector_extension() -> dict:
     except Exception as exc:
         logger.warning(f"pgvector check failed: {exc}")
         return {"status": "unavailable", "message": str(exc)}
+
+
+async def create_tables_if_needed() -> None:
+    """Create database tables if connected to database schema."""
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            logger.info("Database schema tables verified/created successfully.")
+    except Exception as exc:
+        logger.warning(f"Database table creation skipped (db unavailable or standalone mode): {exc}")

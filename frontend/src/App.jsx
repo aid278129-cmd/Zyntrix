@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { HealthDiagnosticPanel } from './components/HealthDiagnosticPanel';
 import { ModuleCard } from './components/ModuleCard';
 import { CitationViewer } from './components/CitationViewer';
+import { KnowledgeBaseExplorer } from './components/KnowledgeBaseExplorer';
 import { StatusBadge } from './components/StatusBadge';
 import {
   ShieldAlert,
@@ -21,7 +22,7 @@ import {
 export default function App() {
   const [health, setHealth] = useState(null);
   const [systemInfo, setSystemInfo] = useState(null);
-  const [activeTab, setActiveTab] = useState('diagnostics');
+  const [activeTab, setActiveTab] = useState('knowledge');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchHealth = async () => {
@@ -57,9 +58,9 @@ export default function App() {
   }, []);
 
   const tabs = [
-    { id: 'diagnostics', label: 'Architecture & Health (M0)', icon: Cpu },
+    { id: 'knowledge', label: 'Verified BIS Knowledge Base (M1)', icon: BookOpen },
+    { id: 'diagnostics', label: 'Architecture & Health', icon: Cpu },
     { id: 'dna', label: 'Product DNA Engine', icon: Dna },
-    { id: 'knowledge', label: 'BIS Standards & Clauses', icon: BookOpen },
     { id: 'citation', label: 'Citation Guard & Evidence', icon: ShieldAlert },
     { id: 'passport', label: 'Compliance Passport', icon: FileCheck2 },
   ];
@@ -76,48 +77,48 @@ export default function App() {
     },
     {
       code: 'MOD-02',
-      title: 'Database & pgvector Foundation',
+      title: 'Database & pgvector Ingestion',
       status: 'READY',
       description:
-        'SQLAlchemy 2.0 async ORM models with PostgreSQL vector extension abstractions for clause-level embeddings.',
-      implementedItems: ['Base declarative audit models', '12 core domain entities', 'pgvector extension health queries'],
-      plannedItems: ['Alembic auto-migrations', 'HNSW vector indexing'],
+        'SQLAlchemy 2.0 async ORM with SHA-256 document hashing, hierarchical clause models, and vector similarity search.',
+      implementedItems: ['SHA-256 document registry', '12 core domain entities', 'pgvector embeddings storage', 'Metadata filtering query'],
+      plannedItems: ['Live synchronization with e-BIS / Manakonline (M2)'],
     },
     {
       code: 'MOD-03',
+      title: 'BIS Document Ingestion Pipeline',
+      status: 'READY',
+      description:
+        'Layout-aware PyMuPDF extractor, Tesseract OCR fallback, hierarchical clause segmenter, and typed requirement extractor.',
+      implementedItems: ['PyMuPDF page-preserving parser', 'Dotted decimal hierarchy parser', 'Standard metadata extractor', 'Requirement typing (Material/Performance/Safety)'],
+      plannedItems: ['Table structure extractor', 'BOM tabular parser (M2)'],
+    },
+    {
+      code: 'MOD-04',
       title: 'Product DNA Schema Layer',
       status: 'READY',
       description:
         'Strictly typed Pydantic models for product technical attributes with full provenance tracking and missing field clarification handlers.',
       implementedItems: ['Core product schema', 'Extensible DNAAttribute model', 'Missing attribute clarification requests'],
-      plannedItems: ['BOM file parser (M2)', 'Auto-normalization engine (M1)'],
+      plannedItems: ['Auto-normalization engine (M2)'],
     },
     {
-      code: 'MOD-04',
+      code: 'MOD-05',
       title: 'Citation Guard Contract',
       status: 'READY',
       description:
         'Trust-enforcing contract ensuring compliance claims are backed by verifiable Indian Standard clause text.',
       implementedItems: ['Provenance citation models', 'ValidationStatus enum contract', 'Multi-state compliance enum'],
-      plannedItems: ['LLM claim-to-evidence cross-checker (M1)', 'Semantic contradiction detector (M1)'],
-    },
-    {
-      code: 'MOD-05',
-      title: 'Clause Retrieval & Gap Engine',
-      status: 'PLANNED_FOR_M1',
-      description:
-        'Deterministic rule evaluation engine combined with clause-level RAG for calculating technical compliance gaps.',
-      implementedItems: ['Domain model schemas', 'Multi-state evaluation flags'],
-      plannedItems: ['PyMuPDF document ingestion (M1)', 'Deterministic Rule Engine APP-xxx (M1)', 'Gap report generator (M1)'],
+      plannedItems: ['LLM claim-to-evidence cross-checker (M2)'],
     },
     {
       code: 'MOD-06',
-      title: 'Evidence Graph & React Flow',
-      status: 'PLANNED_FOR_M1',
+      title: 'Clause Retrieval & Search Engine',
+      status: 'READY',
       description:
-        'Interactive visual provenance graph connecting claims to standards, clauses, test reports, and labs.',
-      implementedItems: ['React architecture foundation', 'Graph node data contracts'],
-      plannedItems: ['React Flow visual canvas (M1)', 'Interactive node inspector (M1)'],
+        'Vector similarity search combined with SQL metadata filtering for clause-level retrieval with page provenance citations.',
+      implementedItems: ['Semantic clause search API', 'EmbeddingProvider abstraction', 'Ground-truth evaluation benchmark'],
+      plannedItems: ['Hybrid BM25 + dense re-ranking (M2)', 'React Flow Evidence Graph (M2)'],
     },
   ];
 
@@ -137,12 +138,13 @@ export default function App() {
               “LLM generates explanations; retrieved evidence establishes compliance claims.”
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
-              The LLM is strictly not the compliance authority. Every claim requires clause-level provenance verification.
+              Verified BIS Knowledge Base active for Demonstration Category: <span className="text-blue-300 font-semibold">Drinkware & Food Contact Containers (IS 17526:2021)</span>.
             </p>
           </div>
           <div className="flex items-center gap-2 self-start md:self-auto">
-            <span className="px-3 py-1 rounded bg-blue-900/40 text-blue-300 text-xs font-mono font-semibold border border-blue-800/60">
-              Milestone: M0 Complete
+            <span className="px-3 py-1 rounded bg-emerald-950/80 text-emerald-300 text-xs font-mono font-semibold border border-emerald-800/60 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Milestone M1 Ready
             </span>
           </div>
         </div>
@@ -170,6 +172,10 @@ export default function App() {
         </div>
 
         {/* Tab Contents */}
+        {activeTab === 'knowledge' && (
+          <KnowledgeBaseExplorer />
+        )}
+
         {activeTab === 'diagnostics' && (
           <div className="space-y-8">
             <HealthDiagnosticPanel health={health} onRefresh={fetchHealth} />
@@ -251,39 +257,6 @@ export default function App() {
           </div>
         )}
 
-        {activeTab === 'knowledge' && (
-          <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-blue-400" />
-                    BIS Knowledge Base & Indian Standards Schema
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Multi-domain structured repository modeling Indian Standards, Schemes, QCOs, and Clauses.
-                  </p>
-                </div>
-                <StatusBadge status="READY" />
-              </div>
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-lg bg-slate-950 border border-slate-800">
-                  <h4 className="text-sm font-bold text-white">Standard Catalog</h4>
-                  <p className="text-xs text-slate-400 mt-1">IS numbers, QCO notification dates, revision histories, and BIS schemes (Scheme I / CRS).</p>
-                </div>
-                <div className="p-4 rounded-lg bg-slate-950 border border-slate-800">
-                  <h4 className="text-sm font-bold text-white">Clause-Level Granularity</h4>
-                  <p className="text-xs text-slate-400 mt-1">Hierarchical clauses (4.1, 4.2.1), test methods, and pass/fail parameter criteria.</p>
-                </div>
-                <div className="p-4 rounded-lg bg-slate-950 border border-slate-800">
-                  <h4 className="text-sm font-bold text-white">Laboratory Registry</h4>
-                  <p className="text-xs text-slate-400 mt-1">BIS recognized testing labs, NABL accreditation scopes, and testing parameters.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {activeTab === 'citation' && (
           <div className="space-y-6">
             <CitationViewer />
@@ -303,7 +276,7 @@ export default function App() {
                     Digital compliance passport certifying readiness with full cryptographic provenance hash.
                   </p>
                 </div>
-                <StatusBadge status="PLANNED_FOR_M1" />
+                <StatusBadge status="PLANNED_FOR_M1" customLabel="PLANNED FOR M2" />
               </div>
               <div className="mt-4 p-5 rounded-lg bg-slate-950 border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
@@ -325,7 +298,7 @@ export default function App() {
       <footer className="border-t border-slate-800 bg-slate-950 py-6 px-6 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <span>BIS Compliance Compiler &bull; Team Zyntrix (SIH 2024 / Problem 26107)</span>
-          <span>Engineering Foundation &bull; Milestone M0</span>
+          <span>Verified Knowledge Base &bull; Milestone M1</span>
         </div>
       </footer>
     </div>

@@ -7,18 +7,20 @@ from backend.app.core.exceptions import ComplianceCompilerException, compliance_
 from backend.app.api.health import router as health_router
 from backend.app.api import api_router
 from backend.app.database.postgres import init_db_extensions
+from backend.app.database.session import create_tables_if_needed
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.PROJECT_NAME} (Team: {settings.PROJECT_TEAM}) v{settings.VERSION}")
     logger.info(f"Environment: {settings.ENVIRONMENT} | SIH Problem: {settings.SIH_PROBLEM_ID}")
-    
-    # Attempt Postgres extensions initialization
+
+    # Attempt Postgres extensions initialization & schema creation
     await init_db_extensions()
-    
+    await create_tables_if_needed()
+
     yield
-    
+
     logger.info(f"Shutting down {settings.PROJECT_NAME}")
 
 

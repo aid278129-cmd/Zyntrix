@@ -1,8 +1,13 @@
 import pytest
 import sys
 import os
+import asyncio
 from pathlib import Path
 from httpx import AsyncClient, ASGITransport
+
+# Configure SelectorEventLoop for psycopg async on Windows
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # Ensure repository root is in sys.path
 repo_root = Path(__file__).resolve().parent.parent.parent

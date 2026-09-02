@@ -20,10 +20,23 @@ from backend.app.schemas.evidence import (
     CitationGuardCheckRequest,
     CitationGuardCheckResponse,
 )
-from backend.app.schemas.standard import StandardBase, StandardCreate, StandardResponse
-from backend.app.schemas.clause import ClauseBase, ClauseCreate, ClauseResponse
+from backend.app.schemas.standard import (
+    StandardBase,
+    StandardCreate,
+    StandardResponse,
+    StandardDetailResponse,
+)
+from backend.app.schemas.clause import (
+    ClauseBase,
+    ClauseCreate,
+    ClauseResponse,
+    ClauseTreeNode,
+    ClauseSearchQuery,
+    ClauseSearchResult,
+    RequirementSchema,
+)
 from backend.app.schemas.passport import CompliancePassportCard
-from backend.app.schemas.document import DocumentUploadResponse
+from backend.app.schemas.document import DocumentRegistryResponse, DocumentUploadResponse
 
 __all__ = [
     "APIResponse",
@@ -47,9 +60,15 @@ __all__ = [
     "StandardBase",
     "StandardCreate",
     "StandardResponse",
+    "StandardDetailResponse",
     "ClauseBase",
     "ClauseCreate",
     "ClauseResponse",
+    "ClauseTreeNode",
+    "ClauseSearchQuery",
+    "ClauseSearchResult",
+    "RequirementSchema",
     "CompliancePassportCard",
+    "DocumentRegistryResponse",
     "DocumentUploadResponse",
 ]

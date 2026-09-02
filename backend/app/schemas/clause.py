@@ -2,12 +2,31 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 
 
+class RequirementSchema(BaseModel):
+    id: Optional[str] = None
+    clause_id: Optional[str] = None
+    code: str
+    requirement_type: str = "PERFORMANCE"
+    description: str
+    measurable_condition: Optional[str] = None
+    evidence_type: Optional[str] = None
+    test_method_reference: Optional[str] = None
+    interpretation_status: str = "CONFIDENT"
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ClauseBase(BaseModel):
     clause_number: str = Field(..., description="Clause number e.g. 4.2.1")
     title: str
     section: Optional[str] = None
     text_content: str
     page_number: Optional[int] = None
+    page_start: Optional[int] = None
+    page_end: Optional[int] = None
+    parent_clause_id: Optional[str] = None
+    segmentation_status: str = "CONFIDENT"
+    verification_status: str = "VERIFIED"
     version: str = "1.0"
     metadata_json: Dict[str, Any] = Field(default_factory=dict)
 
@@ -19,5 +38,39 @@ class ClauseCreate(ClauseBase):
 class ClauseResponse(ClauseBase):
     id: str
     standard_id: str
+    requirements: List[RequirementSchema] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ClauseTreeNode(ClauseBase):
+    id: str
+    standard_id: str
+    subclauses: List["ClauseTreeNode"] = Field(default_factory=list)
+    requirements: List[RequirementSchema] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ClauseSearchQuery(BaseModel):
+    query: str = Field(..., min_length=1, description="Semantic or keyword query")
+    standard_number: Optional[str] = None
+    verified_only: bool = True
+    top_k: int = Field(default=5, ge=1, le=50)
+    category: Optional[str] = None
+
+
+class ClauseSearchResult(BaseModel):
+    clause_id: str
+    standard_id: str
+    standard_number: str
+    standard_title: str
+    clause_number: str
+    clause_title: str
+    section: Optional[str] = None
+    page_number: Optional[int] = None
+    text_content: str
+    similarity_score: float
+    verification_status: str
+    requirements: List[RequirementSchema] = Field(default_factory=list)
+    citation: Dict[str, Any] = Field(default_factory=dict)

@@ -1,5 +1,5 @@
 from typing import Optional, List
-from sqlalchemy import String, Text, Boolean, ForeignKey
+from sqlalchemy import String, Text, Boolean, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.models.base import Base
 
@@ -11,9 +11,20 @@ class Requirement(Base):
 
     clause_id: Mapped[str] = mapped_column(String(36), ForeignKey("clauses.id"), index=True, nullable=False)
     code: Mapped[str] = mapped_column(String(50), index=True, nullable=False)  # e.g. "REQ-IS17526-001"
+    
+    # Requirement type: MATERIAL | DIMENSION | PERFORMANCE | SAFETY | CONSTRUCTION | MARKING | PACKAGING | TESTING | DOCUMENTATION | OTHER
+    requirement_type: Mapped[str] = mapped_column(String(50), default="PERFORMANCE", index=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    requirement_type: Mapped[str] = mapped_column(String(50), default="MANDATORY")  # MANDATORY | CONDITIONAL | OPTIONAL
+    measurable_condition: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    evidence_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # lab_test | material_certificate | visual_inspection
     test_method_reference: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    # Status: CONFIDENT | REQUIRES_REVIEW
+    interpretation_status: Mapped[str] = mapped_column(String(50), default="CONFIDENT")
+    
+    # Vector embedding representation
+    embedding: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
 
     clause: Mapped["Clause"] = relationship("Clause", back_populates="requirements")
     tests: Mapped[List["StandardTest"]] = relationship(
