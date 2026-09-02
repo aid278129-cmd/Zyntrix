@@ -1,3 +1,12 @@
+import sys
+import asyncio
+
+if sys.platform == "win32":
+    try:
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    except Exception:
+        pass
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,9 +24,17 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.PROJECT_NAME} (Team: {settings.PROJECT_TEAM}) v{settings.VERSION}")
     logger.info(f"Environment: {settings.ENVIRONMENT} | SIH Problem: {settings.SIH_PROBLEM_ID}")
 
-    # Attempt Postgres extensions initialization & schema creation
+    # Attempt PostgreSQL extensions initialization & schema creation
     await init_db_extensions()
     await create_tables_if_needed()
+
+    # Pre-seed in-memory golden demo for instant zero-latency availability
+    try:
+        from backend.app.services.assessment.memory_store import ensure_golden_demo_seeded
+        await ensure_golden_demo_seeded()
+        logger.info("Golden SIH Demo assessment pre-seeded successfully in memory.")
+    except Exception as exc:
+        logger.warning(f"Golden demo initialization notice: {exc}")
 
     yield
 

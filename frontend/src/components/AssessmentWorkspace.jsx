@@ -18,6 +18,7 @@ import {
   Plus,
   ArrowRight,
   Sparkles,
+  Scale,
 } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 import { EvidenceGraphCanvas } from './EvidenceGraphCanvas';
@@ -29,6 +30,7 @@ export function AssessmentWorkspace() {
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
   const [assessment, setAssessment] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isJudgeMode, setIsJudgeMode] = useState(false);
   const [activeSection, setActiveSection] = useState('overview'); // overview | dna | applicability | requirements | evidence | roadmap | graph | passport | history
   const [expandedClause, setExpandedClause] = useState(null);
   const [passportData, setPassportData] = useState(null);
@@ -62,6 +64,16 @@ export function AssessmentWorkspace() {
         setAssessmentsList(data);
         if (data.length > 0 && !selectedAssessmentId) {
           loadAssessment(data[0].assessment_id);
+        } else if (data.length === 0) {
+          const initRes = await fetch('/api/v1/assessments/demo/reset', { method: 'POST' });
+          if (initRes.ok) {
+            const initData = await initRes.json();
+            setAssessment(initData);
+            setSelectedAssessmentId(initData.assessment_id);
+            if (initData.summary) {
+              setAssessmentsList([initData.summary]);
+            }
+          }
         }
       }
     } catch (err) {
@@ -216,6 +228,29 @@ export function AssessmentWorkspace() {
           )}
 
           <button
+            onClick={async () => {
+              setIsLoading(true);
+              try {
+                const res = await fetch('/api/v1/assessments/demo/reset', { method: 'POST' });
+                if (res.ok) {
+                  const data = await res.json();
+                  setAssessment(data);
+                  setSelectedAssessmentId(data.assessment_id);
+                  fetchAssessments();
+                }
+              } catch (err) {
+                console.warn('Demo reset error:', err);
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow-lg shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Reset Golden Demo
+          </button>
+
+          <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition shadow-lg shrink-0"
           >
@@ -333,6 +368,18 @@ export function AssessmentWorkspace() {
                 <span className="px-2.5 py-1 rounded text-xs font-mono font-bold bg-slate-950 text-slate-300 border border-slate-700">
                   Status: {assessment.status}
                 </span>
+
+                <button
+                  onClick={() => setIsJudgeMode(!isJudgeMode)}
+                  className={`px-3 py-1 rounded text-xs font-bold transition flex items-center gap-1.5 border ${
+                    isJudgeMode
+                      ? 'bg-amber-950 text-amber-300 border-amber-800'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                  }`}
+                >
+                  <Scale className="w-3.5 h-3.5" />
+                  {isJudgeMode ? 'Judge Mode: ACTIVE' : 'Enable Judge Mode'}
+                </button>
 
                 <button
                   onClick={handleLoadPassport}
@@ -807,8 +854,31 @@ export function AssessmentWorkspace() {
           />
         </div>
       ) : (
-        <div className="p-12 text-center text-slate-500 bg-slate-900 border border-slate-800 rounded-xl">
-          Loading assessment workspace...
+        <div className="p-12 text-center text-slate-500 bg-slate-900 border border-slate-800 rounded-xl space-y-4">
+          <p className="text-sm font-medium text-slate-300">Ready to start compliance evaluation</p>
+          <p className="text-xs text-slate-500">Initialize the Golden SIH Demonstration Case with official DPIIT QCO 2023 rule base:</p>
+          <button
+            onClick={async () => {
+              setIsLoading(true);
+              try {
+                const res = await fetch('/api/v1/assessments/demo/reset', { method: 'POST' });
+                if (res.ok) {
+                  const data = await res.json();
+                  setAssessment(data);
+                  setSelectedAssessmentId(data.assessment_id);
+                  fetchAssessments();
+                }
+              } catch (err) {
+                console.warn('Demo reset error:', err);
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow-lg"
+          >
+            <Sparkles className="w-4 h-4" />
+            Initialize Golden SIH Demo Assessment
+          </button>
         </div>
       )}
     </div>

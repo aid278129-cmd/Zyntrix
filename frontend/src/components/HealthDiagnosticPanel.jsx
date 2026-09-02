@@ -91,8 +91,7 @@ export function HealthDiagnosticPanel({ health, onRefresh }) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
         {services.map((svc) => {
-          const Icon = svc.icon;
-          const isOk = svc.status === 'ok';
+          const isOk = svc.status === 'ok' || svc.status.includes('ready') || svc.status.includes('active');
           const isDegraded = svc.status === 'disabled' || svc.status === 'unavailable';
 
           return (

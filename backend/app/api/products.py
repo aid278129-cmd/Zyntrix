@@ -155,23 +155,27 @@ async def analyze_product(
             dna=dna,
         )
 
-        # Store DecisionRecords in database for auditable traceability
-        for ev in compliance_eval.evaluations:
-            rec = DecisionRecord(
-                product_id=product_id,
-                standard_number=primary_app.standard_number,
-                clause_number=ev.clause_number,
-                requirement_id=ev.requirement_id,
-                status=ev.status.value,
-                recommended_action=ev.recommended_action.value if ev.recommended_action else None,
-                rule_id=primary_app.matched_rule_id,
-                decision_engine="DETERMINISTIC_RULE_ENGINE",
-                llm_decision=False,
-                explanation=ev.explanation,
-                inputs_snapshot=dna.model_dump(),
-            )
-            db.add(rec)
-        await db.commit()
+        # Store DecisionRecords in database for auditable traceability if available
+        if db is not None:
+            try:
+                for ev in compliance_eval.evaluations:
+                    rec = DecisionRecord(
+                        product_id=product_id,
+                        standard_number=primary_app.standard_number,
+                        clause_number=ev.clause_number,
+                        requirement_id=ev.requirement_id,
+                        status=ev.status.value,
+                        recommended_action=ev.recommended_action.value if ev.recommended_action else None,
+                        rule_id=primary_app.matched_rule_id,
+                        decision_engine="DETERMINISTIC_RULE_ENGINE",
+                        llm_decision=False,
+                        explanation=ev.explanation,
+                        inputs_snapshot=dna.model_dump(),
+                    )
+                    db.add(rec)
+                await db.commit()
+            except Exception as exc:
+                logger.warning(f"DB decision record commit skipped (standalone mode active): {exc}")
 
     # 5. Build Evidence Graph
     graph_data = build_evidence_graph(
@@ -212,7 +216,7 @@ async def analyze_product(
 async def clarify_product_attribute(
     product_id: str,
     req: ClarifyRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Optional[AsyncSession] = Depends(get_db),
 ):
     if product_id not in _PRODUCT_WORKSPACE_STORE:
         raise HTTPException(

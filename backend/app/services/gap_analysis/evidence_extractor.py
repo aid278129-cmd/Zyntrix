@@ -79,8 +79,14 @@ def extract_evidence_from_snippet(
     authority: str = "LAB_REPORT",
 ) -> List[StructuredEvidence]:
     """Extract structured evidence parameters from document snippet or lab test report text."""
+    from backend.app.services.security.prompt_guard import scan_and_sanitize_untrusted_text
+
+    # Treat all evidence snippets as UNTRUSTED DATA and sanitize prompt injections
+    scan_res = scan_and_sanitize_untrusted_text(snippet)
+    clean_snippet = scan_res.sanitized_text
+
     evidences: List[StructuredEvidence] = []
-    text_lower = snippet.lower()
+    text_lower = clean_snippet.lower()
 
     # 1. Temperature / Heat retention parameter
     temp_search = re.search(r"(?:temperature|heat retention|thermal performance)[^\d\n]*([\d\.]+\s*(?:°\s*c|deg\s*c|c\b))", snippet, re.I)
@@ -170,5 +176,6 @@ def detect_evidence_conflicts(evidences: List[StructuredEvidence]) -> List[Dict[
                         }
                         for ev in ev_list
                     ],
+                    "recommended_action": "EXPERT_REVIEW",
                 })
     return conflicts

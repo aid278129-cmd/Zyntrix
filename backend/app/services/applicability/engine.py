@@ -105,4 +105,25 @@ def determine_applicability(
                 )
             )
 
+    # If no declarative rule matched, check candidate standard pipeline
+    if not decisions:
+        from backend.app.services.applicability.candidate_generator import generate_candidate_standards
+        cand_res = generate_candidate_standards(dna)
+        for c in cand_res.candidates:
+            decisions.append(
+                ApplicabilityDecision(
+                    standard_number=c.standard_number,
+                    standard_title=c.standard_title,
+                    technical_relevance=c.status,
+                    regulatory_status=c.regulatory_status,
+                    matched_rule_id=c.generated_by_rule,
+                    rule_verification_status=c.source_status,
+                    scheme="Scheme I (ISI Mark)" if c.status == "LIKELY_APPLICABLE" else "NOT_ESTABLISHED",
+                    mandatory_reason=None if c.status != "LIKELY_APPLICABLE" else "DPIIT QCO Mandate",
+                    explanation=c.explanation,
+                    sources=[],
+                    llm_decision=False,
+                )
+            )
+
     return decisions

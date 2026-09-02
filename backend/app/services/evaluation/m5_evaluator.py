@@ -158,7 +158,7 @@ def run_m5_comprehensive_evaluation() -> M5ComprehensiveEvaluationReport:
     for c in cases:
         dna = extract_product_dna_from_text(c["product_description"])
         apps = determine_applicability(dna, authoritative_only=False)
-        found_stds = [a.standard_number for a in apps]
+        found_stds = [a.standard_number for a in apps if a.standard_number != "CATALOG_COVERAGE_GAP"]
         exp_stds = c["expected_standards"]
         if not exp_stds and not found_stds:
             std_correct += 1

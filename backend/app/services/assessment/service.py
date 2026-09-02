@@ -14,6 +14,13 @@ from sqlalchemy import select
 from backend.app.models.assessment import Assessment, AssessmentSnapshot, AssessmentStatus
 from backend.app.models.product import Product
 from backend.app.models.decision_record import DecisionRecord
+from backend.app.core.logging import logger
+from backend.app.services.assessment.memory_store import (
+    save_assessment_mem,
+    get_assessment_mem,
+    save_snapshot_mem,
+    PRODUCTS_STORE,
+)
 from backend.app.schemas.product_dna import ProductDNACore, ClarificationRequirement
 from backend.app.schemas.compliance import ComplianceStatus, RecommendedAction
 from backend.app.schemas.assessment import (
@@ -148,7 +155,7 @@ class AssessmentService:
             dna=dna,
         )
 
-        # 4. Create Product & Assessment in DB
+        # 4. Create Product & Assessment in DB or Memory
         prod = Product(
             id=product_id,
             name=req.product_name,
@@ -156,7 +163,11 @@ class AssessmentService:
             description=req.description,
             dna_metadata=dna.model_dump(),
         )
-        db.add(prod)
+        if db is not None:
+            try:
+                db.add(prod)
+            except Exception as exc:
+                logger.warning(f"DB prod add skipped: {exc}")
 
         mode_str = "AUTHORITATIVE_MODE" if req.authoritative_mode else "DEVELOPMENT_MODE"
         init_status = AssessmentStatus.COLLECTING_INFORMATION if clarifications else AssessmentStatus.COMPLIANCE_REVIEW
@@ -175,9 +186,16 @@ class AssessmentService:
             evidence_ids=[],
             source_ids=["SRC-BIS-OFFICIAL", "SRC-DPIIT-QCO-2023"],
         )
-        db.add(assessment)
-        await db.commit()
-        await db.refresh(assessment)
+        if db is not None:
+            try:
+                db.add(assessment)
+                await db.commit()
+                await db.refresh(assessment)
+            except Exception as exc:
+                logger.warning(f"DB assessment add skipped, continuing in memory: {exc}")
+
+        # Always persist to in-memory store
+        save_assessment_mem(assessment, prod)
 
         # 5. Create Genesis Snapshot for Reproducibility
         await cls.create_snapshot(
@@ -191,7 +209,7 @@ class AssessmentService:
     @classmethod
     async def create_snapshot(
         cls,
-        db: AsyncSession,
+        db: Optional[AsyncSession],
         assessment: Assessment,
         trigger_event: str,
     ) -> AssessmentSnapshot:
@@ -212,9 +230,14 @@ class AssessmentService:
             evidence_ids=assessment.evidence_ids,
             summary_counts=summary.model_dump(),
         )
-        db.add(snapshot)
-        await db.commit()
-        await db.refresh(snapshot)
+        if db is not None:
+            try:
+                db.add(snapshot)
+                await db.commit()
+                await db.refresh(snapshot)
+            except Exception as exc:
+                logger.warning(f"DB snapshot persist skipped, continuing in memory: {exc}")
+        save_snapshot_mem(snapshot)
         return snapshot
 
     @classmethod
@@ -269,13 +292,20 @@ class AssessmentService:
     @classmethod
     async def get_assessment_detail(
         cls,
-        db: AsyncSession,
+        db: Optional[AsyncSession],
         assessment: Assessment,
     ) -> AssessmentDetailResponse:
         """Compose comprehensive assessment workspace detail."""
-        prod_stmt = select(Product).where(Product.id == assessment.product_id)
-        prod_res = await db.execute(prod_stmt)
-        prod = prod_res.scalar_one_or_none()
+        prod = None
+        if db is not None:
+            try:
+                prod_stmt = select(Product).where(Product.id == assessment.product_id)
+                prod_res = await db.execute(prod_stmt)
+                prod = prod_res.scalar_one_or_none()
+            except Exception as exc:
+                logger.warning(f"DB product query notice: {exc}")
+        if not prod:
+            prod = PRODUCTS_STORE.get(assessment.product_id)
 
         dna = ProductDNACore.model_validate(assessment.product_dna_snapshot or {})
         clarifications = detect_missing_attributes(dna)
@@ -331,7 +361,7 @@ class AssessmentService:
     @classmethod
     async def add_evidence_and_recalculate(
         cls,
-        db: AsyncSession,
+        db: Optional[AsyncSession],
         assessment: Assessment,
         snippet: str,
         evidence_type: str = "TEST_REPORT",
@@ -374,8 +404,13 @@ class AssessmentService:
         assessment.evidence_ids = list(set((assessment.evidence_ids or []) + new_ev_ids))
         assessment.status = AssessmentStatus.COMPLIANCE_REVIEW.value
 
-        await db.commit()
-        await db.refresh(assessment)
+        if db is not None:
+            try:
+                await db.commit()
+                await db.refresh(assessment)
+            except Exception as exc:
+                logger.warning(f"DB evidence commit skipped: {exc}")
+        save_assessment_mem(assessment)
 
         # Snapshot the new decision state
         await cls.create_snapshot(
@@ -388,7 +423,7 @@ class AssessmentService:
     @classmethod
     async def answer_clarification_and_recalculate(
         cls,
-        db: AsyncSession,
+        db: Optional[AsyncSession],
         assessment: Assessment,
         attribute_name: str,
         raw_value: str,
@@ -423,8 +458,13 @@ class AssessmentService:
         if not clarifications:
             assessment.status = AssessmentStatus.COMPLIANCE_REVIEW.value
 
-        await db.commit()
-        await db.refresh(assessment)
+        if db is not None:
+            try:
+                await db.commit()
+                await db.refresh(assessment)
+            except Exception as exc:
+                logger.warning(f"DB clarification commit skipped: {exc}")
+        save_assessment_mem(assessment)
 
         await cls.create_snapshot(
             db=db,

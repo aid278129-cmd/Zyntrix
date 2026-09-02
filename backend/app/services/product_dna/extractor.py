@@ -24,7 +24,11 @@ def extract_product_dna_from_text(
     - Extracted attributes have explicit confidence (0.0 to 1.0) and extraction_method.
     - Missing required attributes are NOT guessed or fabricated.
     """
-    raw_lower = text.lower()
+    from backend.app.services.security.prompt_guard import scan_and_sanitize_untrusted_text
+
+    scan_res = scan_and_sanitize_untrusted_text(text)
+    clean_text = scan_res.sanitized_text
+    raw_lower = clean_text.lower()
     attributes: List[DNAAttribute] = []
     materials: List[str] = []
 
@@ -36,14 +40,16 @@ def extract_product_dna_from_text(
     insulated = False
     electrical = False
 
-    # Drinkware / Flasks / Bottles
-    if any(k in raw_lower for k in ["flask", "bottle", "drinkware", "cooler", "sipper"]):
+    # Drinkware / Flasks / Bottles / Standards Queries
+    if any(k in raw_lower for k in ["flask", "bottle", "drinkware", "cooler", "sipper", "thermos", "heat retention", "leakage test", "is 17526", "clause 4.2.1", "clause 5.2", "clause 5.4"]):
         category = "Drinkware & Food Contact Containers"
         sub_category = "Vacuum Insulated Containers"
         if "flask" in raw_lower:
             product_name = "Vacuum Insulated Flask"
         elif "bottle" in raw_lower:
             product_name = "Vacuum Insulated Bottle"
+        elif "thermos" in raw_lower:
+            product_name = "Vacuum Insulated Thermos"
         else:
             product_name = "Drinkware Container"
 
@@ -51,8 +57,10 @@ def extract_product_dna_from_text(
             intended_use = "domestic_drinking"
         elif "commercial" in raw_lower:
             intended_use = "commercial_beverage"
+        elif "general storage" in raw_lower or "chemical" in raw_lower:
+            intended_use = "general_storage"
 
-        if any(k in raw_lower for k in ["insulated", "vacuum", "double wall", "double-wall", "thermal"]):
+        if any(k in raw_lower for k in ["insulated", "vacuum", "double wall", "double-wall", "thermal", "heat retention", "thermos"]):
             insulated = True
 
     # Electrical Appliances
@@ -69,9 +77,9 @@ def extract_product_dna_from_text(
 
     # Material Extraction
     raw_materials = []
-    if re.search(r"\b(grade\s*304|ss\s*304|304\s*stainless|stainless[-\s]*steel\s*304)\b", raw_lower):
+    if re.search(r"\b(grade\s*304|ss\s*304|304\s*stainless|stainless[-\s]*steel\s*304|18/8\s*(?:austenitic\s*)?stainless)\b", raw_lower):
         raw_materials.append("Stainless Steel Grade 304")
-    elif re.search(r"\b(stainless[-\s]*steel|ss)\b", raw_lower):
+    elif re.search(r"\b(stainless[-\s]*steel|ss|stainless\s*liner)\b", raw_lower):
         raw_materials.append("Stainless Steel")
 
     if re.search(r"\b(polypropylene|pp\b|bpa-free\s*plastic)", raw_lower):

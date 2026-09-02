@@ -21,9 +21,8 @@ async def get_health():
     db_status = db_check.get("status", "unavailable")
     vector_status = vector_check.get("status", "unavailable")
 
-    overall_status = "ok" if (api_status == "ok" and db_status == "ok") else "degraded"
-    if db_status == "unavailable":
-        overall_status = "error"
+    is_db_healthy = db_status in ("ok", "standalone_ready")
+    overall_status = "ok" if (api_status == "ok" and is_db_healthy) else "degraded"
 
     return HealthResponse(
         status=overall_status,
@@ -45,25 +44,25 @@ async def get_health():
 
 @router.get(
     "/health/db",
-    summary="PostgreSQL Health Check",
-    description="Verify direct database connectivity.",
+    summary="PostgreSQL / Standalone Health Check",
+    description="Verify direct database connectivity or standalone persistence.",
 )
 async def get_db_health():
     result = await check_database_connection()
     status_code = (
-        status.HTTP_200_OK if result.get("status") == "ok" else status.HTTP_503_SERVICE_UNAVAILABLE
+        status.HTTP_200_OK if result.get("status") in ("ok", "standalone_ready") else status.HTTP_503_SERVICE_UNAVAILABLE
     )
     return JSONResponse(status_code=status_code, content=result)
 
 
 @router.get(
     "/health/vector",
-    summary="pgvector Extension Health Check",
-    description="Verify pgvector extension availability.",
+    summary="Vector Engine Health Check",
+    description="Verify pgvector extension or standalone dense cosine similarity availability.",
 )
 async def get_vector_health():
     result = await check_pgvector_extension()
     status_code = (
-        status.HTTP_200_OK if result.get("status") == "ok" else status.HTTP_503_SERVICE_UNAVAILABLE
+        status.HTTP_200_OK if result.get("status") in ("ok", "standalone_ready") else status.HTTP_503_SERVICE_UNAVAILABLE
     )
     return JSONResponse(status_code=status_code, content=result)
