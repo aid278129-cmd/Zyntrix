@@ -5,6 +5,7 @@ import { ModuleCard } from './components/ModuleCard';
 import { CitationViewer } from './components/CitationViewer';
 import { KnowledgeBaseExplorer } from './components/KnowledgeBaseExplorer';
 import { ProductWorkspace } from './components/ProductWorkspace';
+import { RetrievalDebugPanel } from './components/RetrievalDebugPanel';
 import { StatusBadge } from './components/StatusBadge';
 import {
   ShieldAlert,
@@ -18,6 +19,7 @@ import {
   FileText,
   AlertCircle,
   ExternalLink,
+  Sliders,
 } from 'lucide-react';
 
 export default function App() {
@@ -61,7 +63,8 @@ export default function App() {
   const tabs = [
     { id: 'knowledge', label: 'Verified BIS Knowledge Base (M1)', icon: BookOpen },
     { id: 'diagnostics', label: 'Architecture & Health', icon: Cpu },
-    { id: 'dna', label: 'Product DNA Engine', icon: Dna },
+    { id: 'dna', label: 'Product Workspace & Evidence Graph (M2)', icon: Dna },
+    { id: 'retrieval', label: 'Hybrid Retrieval & Benchmark (M3)', icon: Sliders },
     { id: 'citation', label: 'Citation Guard & Evidence', icon: ShieldAlert },
     { id: 'passport', label: 'Compliance Passport', icon: FileCheck2 },
   ];
@@ -200,6 +203,10 @@ export default function App() {
 
         {activeTab === 'dna' && (
           <ProductWorkspace />
+        )}
+
+        {activeTab === 'retrieval' && (
+          <RetrievalDebugPanel />
         )}
 
         {activeTab === 'citation' && (

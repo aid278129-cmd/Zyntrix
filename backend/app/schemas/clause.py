@@ -73,6 +73,13 @@ class ClauseSearchResult(BaseModel):
     page_number: Optional[int] = None
     text_content: str
     similarity_score: float
+    lexical_score: Optional[float] = None
+    dense_score: Optional[float] = None
+    rerank_score: Optional[float] = None
+    final_score: Optional[float] = None
+    retrieval_mode: str = "HYBRID"
+    match_factors: Dict[str, Any] = Field(default_factory=dict)
+    parent_clause: Optional[Dict[str, Any]] = None
     verification_status: str
     source_authority: Optional[str] = None  # M1.5: expose trust signal
     requirements: List[RequirementSchema] = Field(default_factory=list)

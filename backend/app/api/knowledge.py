@@ -39,11 +39,15 @@ router = APIRouter(tags=["Knowledge Base & Standards"])
 @router.post(
     "/knowledge/search",
     response_model=List[ClauseSearchResult],
-    summary="Semantic & Filtered Clause Retrieval",
-    description="Retrieve verified BIS clauses matching a query. Backend enforces verified_only=True by default.",
+    summary="Hybrid Semantic & Lexical Clause Retrieval",
+    description="Retrieve verified BIS clauses matching a query using BM25 lexical + pgvector dense + reranker.",
 )
 async def search_knowledge_clauses(
     query: ClauseSearchQuery,
+    retrieval_mode: str = "HYBRID",
+    alpha: float = 0.5,
+    beta: float = 0.5,
+    include_context: bool = True,
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -54,6 +58,10 @@ async def search_knowledge_clauses(
             verified_only=query.verified_only,
             include_unverified=query.include_unverified,
             top_k=query.top_k,
+            retrieval_mode=retrieval_mode,
+            alpha=alpha,
+            beta=beta,
+            include_context=include_context,
         )
         return results
     except Exception as exc:
