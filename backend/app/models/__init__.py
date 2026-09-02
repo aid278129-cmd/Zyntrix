@@ -13,6 +13,7 @@ from backend.app.models.verification_record import VerificationRecord
 from backend.app.models.test import StandardTest
 from backend.app.models.evidence import Evidence
 from backend.app.models.compliance_result import ComplianceResult
+from backend.app.models.decision_record import DecisionRecord
 from backend.app.models.laboratory import Laboratory
 from backend.app.models.conversation import Conversation
 
@@ -32,6 +33,7 @@ __all__ = [
     "StandardTest",
     "Evidence",
     "ComplianceResult",
+    "DecisionRecord",
     "Laboratory",
     "Conversation",
 ]
