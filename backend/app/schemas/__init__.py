@@ -9,6 +9,7 @@ from backend.app.schemas.product_dna import (
 )
 from backend.app.schemas.compliance import (
     ComplianceStatus,
+    RecommendedAction,
     ApplicabilityStatus,
     ProvenanceCitation,
     ComplianceAssessmentItem,
@@ -52,6 +53,7 @@ __all__ = [
     "AttributeProvenance",
     "ClarificationRequirement",
     "ComplianceStatus",
+    "RecommendedAction",
     "ApplicabilityStatus",
     "ProvenanceCitation",
     "ComplianceAssessmentItem",

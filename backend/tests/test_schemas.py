@@ -67,11 +67,23 @@ def test_product_dna_clarification_handling():
 
 
 def test_compliance_status_enums():
-    # Multi-state enum assertions
+    # Rich multi-state audit-compliant statuses (8 states)
     assert ComplianceStatus.SATISFIED.value == "SATISFIED"
-    assert ComplianceStatus.POTENTIAL_GAP.value == "POTENTIAL_GAP"
+    assert ComplianceStatus.POTENTIALLY_SATISFIED.value == "POTENTIALLY_SATISFIED"
+    assert ComplianceStatus.MISSING_EVIDENCE.value == "MISSING_EVIDENCE"
     assert ComplianceStatus.MORE_INFORMATION_REQUIRED.value == "MORE_INFORMATION_REQUIRED"
+    assert ComplianceStatus.POTENTIAL_GAP.value == "POTENTIAL_GAP"
+    assert ComplianceStatus.NOT_APPLICABLE.value == "NOT_APPLICABLE"
     assert ComplianceStatus.CONFLICTING_EVIDENCE.value == "CONFLICTING_EVIDENCE"
+    assert ComplianceStatus.REQUIRES_EXPERT_REVIEW.value == "REQUIRES_EXPERT_REVIEW"
+
+    # Expressive decoupled action recommendations (4 actions)
+    from backend.app.schemas.compliance import RecommendedAction
+    assert RecommendedAction.REQUIRES_TESTING.value == "REQUIRES_TESTING"
+    assert RecommendedAction.UPLOAD_EVIDENCE.value == "UPLOAD_EVIDENCE"
+    assert RecommendedAction.PROVIDE_SPECIFICATION.value == "PROVIDE_SPECIFICATION"
+    assert RecommendedAction.EXPERT_REVIEW.value == "EXPERT_REVIEW"
+
     assert ApplicabilityStatus.LIKELY_APPLICABLE.value == "LIKELY_APPLICABLE"
 
 

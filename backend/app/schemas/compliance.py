@@ -16,6 +16,15 @@ class ComplianceStatus(str, Enum):
     REQUIRES_EXPERT_REVIEW = "REQUIRES_EXPERT_REVIEW"
 
 
+class RecommendedAction(str, Enum):
+    """Expressive recommended actions decoupled from evaluation status."""
+
+    REQUIRES_TESTING = "REQUIRES_TESTING"
+    UPLOAD_EVIDENCE = "UPLOAD_EVIDENCE"
+    PROVIDE_SPECIFICATION = "PROVIDE_SPECIFICATION"
+    EXPERT_REVIEW = "EXPERT_REVIEW"
+
+
 class ApplicabilityStatus(str, Enum):
     """Deterministic applicability resolution states."""
 
