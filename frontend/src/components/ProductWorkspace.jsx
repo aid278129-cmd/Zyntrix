@@ -247,9 +247,23 @@ export function ProductWorkspace() {
                 Applicable Indian Standards & Compliance Decisions
               </h3>
               <span className="text-xs font-mono text-slate-400">
-                Mode: <strong className="text-emerald-400">{analysisResult.evaluation_mode}</strong>
+                Mode: <strong className={analysisResult.is_authoritative ? "text-blue-400" : "text-amber-400"}>
+                  {analysisResult.is_authoritative ? "AUTHORITATIVE_MODE (Verified Only)" : "DEVELOPMENT_MODE (Non-Authoritative Test)"}
+                </strong>
               </span>
             </div>
+
+            {analysisResult.is_authoritative && (
+              <div className="p-3.5 rounded-lg bg-blue-950/40 border border-blue-800/60 text-xs text-blue-200 space-y-1">
+                <div className="font-bold flex items-center gap-2 text-blue-300">
+                  <AlertTriangle className="w-4 h-4 text-blue-400" />
+                  Official Source Governance Active (M1.6 Policy)
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Official Standard Metadata, DPIIT Gazette QCO Order (2023), and BIS Product Manual PM/IS 17526/1 are verified. Full technical specification document acquisition is pending authorized procurement. Synthetic fixtures are strictly excluded from authoritative compliance verdicts.
+                </p>
+              </div>
+            )}
 
             {analysisResult.applicability.map((app, aIdx) => (
               <div key={aIdx} className="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-4">

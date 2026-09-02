@@ -93,44 +93,60 @@ async def analyze_product(
         primary_app = applicability[0]
         
         # Representative clauses for IS 17526:2021
-        req_catalog = [
-            {
-                "id": "req-4-2-1",
-                "clause_number": "4.2.1",
-                "clause_title": "Stainless Steel Parts",
-                "code": "REQ-MAT-304",
-                "requirement_type": "MATERIAL",
-                "description": "All metallic parts in direct contact with food shall be manufactured from Stainless Steel Grade 304 or superior.",
-                "measurable_condition": "Grade 304 of IS 6911",
-            },
-            {
-                "id": "req-5-2",
-                "clause_number": "5.2",
-                "clause_title": "Leakage Test",
-                "code": "REQ-PERF-LEAK",
-                "requirement_type": "PERFORMANCE",
-                "description": "Container filled to capacity and inverted for 10 minutes shall show zero leakage or moisture seepage.",
-                "measurable_condition": "Inverted 10 minutes, zero leakage",
-            },
-            {
-                "id": "req-5-4",
-                "clause_number": "5.4",
-                "clause_title": "Thermal Performance Test",
-                "code": "REQ-PERF-THERM",
-                "requirement_type": "PERFORMANCE",
-                "description": "Initial hot water at 95 deg C sealed at room ambient; after 6 hours temperature shall not be less than 60 deg C.",
-                "measurable_condition": ">= 60 deg C after 6 hours",
-            },
-            {
-                "id": "req-7-1",
-                "clause_number": "7.1",
-                "clause_title": "Marking Requirements",
-                "code": "REQ-MARK-ISI",
-                "requirement_type": "MARKING",
-                "description": "Legibly marked with manufacturer trademark, nominal capacity, and the BIS Standard Mark (ISI Mark).",
-                "measurable_condition": "Standard Mark (ISI Mark) + capacity",
-            },
-        ]
+        if req.authoritative_mode:
+            # IN AUTHORITATIVE MODE: Official full text acquisition is pending under official procurement.
+            # Do NOT claim clause-level compliance from synthetic test fixtures.
+            req_catalog = [
+                {
+                    "id": "req-auth-pending",
+                    "clause_number": "PENDING",
+                    "clause_title": "Official Standard Specification Acquisition Pending",
+                    "code": "AUTHORITATIVE_CLAUSE_PENDING",
+                    "requirement_type": "REGULATORY_GOVERNANCE",
+                    "description": "Full official technical standard specification document for IS 17526:2021 is pending acquisition from authorized Bureau of Indian Standards procurement channel. Official Gazette QCO Order 2023 and BIS Product Manual PM/IS 17526/1 are verified.",
+                    "measurable_condition": "Verified official publication from Bureau of Indian Standards",
+                }
+            ]
+        else:
+            # IN DEVELOPMENT MODE: Evaluated against representative test fixture
+            req_catalog = [
+                {
+                    "id": "req-4-2-1",
+                    "clause_number": "4.2.1",
+                    "clause_title": "Stainless Steel Parts (Development Test Fixture)",
+                    "code": "REQ-MAT-304",
+                    "requirement_type": "MATERIAL",
+                    "description": "All metallic parts in direct contact with food shall be manufactured from Stainless Steel Grade 304 or superior.",
+                    "measurable_condition": "Grade 304 of IS 6911",
+                },
+                {
+                    "id": "req-5-2",
+                    "clause_number": "5.2",
+                    "clause_title": "Leakage Test (Development Test Fixture)",
+                    "code": "REQ-PERF-LEAK",
+                    "requirement_type": "PERFORMANCE",
+                    "description": "Container filled to capacity and inverted for 10 minutes shall show zero leakage or moisture seepage.",
+                    "measurable_condition": "Inverted 10 minutes, zero leakage",
+                },
+                {
+                    "id": "req-5-4",
+                    "clause_number": "5.4",
+                    "clause_title": "Thermal Performance Test (Development Test Fixture)",
+                    "code": "REQ-PERF-THERM",
+                    "requirement_type": "PERFORMANCE",
+                    "description": "Initial hot water at 95 deg C sealed at room ambient; after 6 hours temperature shall not be less than 60 deg C.",
+                    "measurable_condition": ">= 60 deg C after 6 hours",
+                },
+                {
+                    "id": "req-7-1",
+                    "clause_number": "7.1",
+                    "clause_title": "Marking Requirements (Development Test Fixture)",
+                    "code": "REQ-MARK-ISI",
+                    "requirement_type": "MARKING",
+                    "description": "Legibly marked with manufacturer trademark, nominal capacity, and the BIS Standard Mark (ISI Mark).",
+                    "measurable_condition": "Standard Mark (ISI Mark) + capacity",
+                },
+            ]
 
         compliance_eval = evaluate_compliance_gaps(
             standard_number=primary_app.standard_number,
@@ -224,44 +240,58 @@ async def clarify_product_attribute(
     compliance_eval: Optional[StandardComplianceEvaluation] = None
     if applicability:
         primary_app = applicability[0]
-        req_catalog = [
-            {
-                "id": "req-4-2-1",
-                "clause_number": "4.2.1",
-                "clause_title": "Stainless Steel Parts",
-                "code": "REQ-MAT-304",
-                "requirement_type": "MATERIAL",
-                "description": "All metallic parts in direct contact with food shall be manufactured from Stainless Steel Grade 304 or superior.",
-                "measurable_condition": "Grade 304 of IS 6911",
-            },
-            {
-                "id": "req-5-2",
-                "clause_number": "5.2",
-                "clause_title": "Leakage Test",
-                "code": "REQ-PERF-LEAK",
-                "requirement_type": "PERFORMANCE",
-                "description": "Container filled to capacity and inverted for 10 minutes shall show zero leakage or moisture seepage.",
-                "measurable_condition": "Inverted 10 minutes, zero leakage",
-            },
-            {
-                "id": "req-5-4",
-                "clause_number": "5.4",
-                "clause_title": "Thermal Performance Test",
-                "code": "REQ-PERF-THERM",
-                "requirement_type": "PERFORMANCE",
-                "description": "Initial hot water at 95 deg C sealed at room ambient; after 6 hours temperature shall not be less than 60 deg C.",
-                "measurable_condition": ">= 60 deg C after 6 hours",
-            },
-            {
-                "id": "req-7-1",
-                "clause_number": "7.1",
-                "clause_title": "Marking Requirements",
-                "code": "REQ-MARK-ISI",
-                "requirement_type": "MARKING",
-                "description": "Legibly marked with manufacturer trademark, nominal capacity, and the BIS Standard Mark (ISI Mark).",
-                "measurable_condition": "Standard Mark (ISI Mark) + capacity",
-            },
-        ]
+        is_auth = cached.get("is_authoritative", False)
+        if is_auth:
+            req_catalog = [
+                {
+                    "id": "req-auth-pending",
+                    "clause_number": "PENDING",
+                    "clause_title": "Official Standard Specification Acquisition Pending",
+                    "code": "AUTHORITATIVE_CLAUSE_PENDING",
+                    "requirement_type": "REGULATORY_GOVERNANCE",
+                    "description": "Full official technical standard specification document for IS 17526:2021 is pending acquisition from authorized Bureau of Indian Standards procurement channel. Official Gazette QCO Order 2023 and BIS Product Manual PM/IS 17526/1 are verified.",
+                    "measurable_condition": "Verified official publication from Bureau of Indian Standards",
+                }
+            ]
+        else:
+            req_catalog = [
+                {
+                    "id": "req-4-2-1",
+                    "clause_number": "4.2.1",
+                    "clause_title": "Stainless Steel Parts (Development Test Fixture)",
+                    "code": "REQ-MAT-304",
+                    "requirement_type": "MATERIAL",
+                    "description": "All metallic parts in direct contact with food shall be manufactured from Stainless Steel Grade 304 or superior.",
+                    "measurable_condition": "Grade 304 of IS 6911",
+                },
+                {
+                    "id": "req-5-2",
+                    "clause_number": "5.2",
+                    "clause_title": "Leakage Test (Development Test Fixture)",
+                    "code": "REQ-PERF-LEAK",
+                    "requirement_type": "PERFORMANCE",
+                    "description": "Container filled to capacity and inverted for 10 minutes shall show zero leakage or moisture seepage.",
+                    "measurable_condition": "Inverted 10 minutes, zero leakage",
+                },
+                {
+                    "id": "req-5-4",
+                    "clause_number": "5.4",
+                    "clause_title": "Thermal Performance Test (Development Test Fixture)",
+                    "code": "REQ-PERF-THERM",
+                    "requirement_type": "PERFORMANCE",
+                    "description": "Initial hot water at 95 deg C sealed at room ambient; after 6 hours temperature shall not be less than 60 deg C.",
+                    "measurable_condition": ">= 60 deg C after 6 hours",
+                },
+                {
+                    "id": "req-7-1",
+                    "clause_number": "7.1",
+                    "clause_title": "Marking Requirements (Development Test Fixture)",
+                    "code": "REQ-MARK-ISI",
+                    "requirement_type": "MARKING",
+                    "description": "Legibly marked with manufacturer trademark, nominal capacity, and the BIS Standard Mark (ISI Mark).",
+                    "measurable_condition": "Standard Mark (ISI Mark) + capacity",
+                },
+            ]
         compliance_eval = evaluate_compliance_gaps(
             standard_number=primary_app.standard_number,
             standard_title=primary_app.standard_title,

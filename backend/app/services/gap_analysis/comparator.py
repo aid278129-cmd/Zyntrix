@@ -108,6 +108,14 @@ def compare_requirement_with_evidence(
             "Packaging and product label artwork required to verify BIS Standard Mark (ISI) and nominal capacity marking.",
         )
 
+    # 5. Handling when authoritative clause specification is pending acquisition
+    if requirement_code == "AUTHORITATIVE_CLAUSE_PENDING":
+        return (
+            ComplianceStatus.MORE_INFORMATION_REQUIRED,
+            RecommendedAction.EXPERT_REVIEW,
+            "Authoritative clause full text acquisition is pending under official BIS procurement. Full specification pending acquisition from authorized channels.",
+        )
+
     # Fallback: General requirement with missing evidence
     return (
         ComplianceStatus.MISSING_EVIDENCE,

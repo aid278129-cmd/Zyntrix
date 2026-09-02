@@ -192,6 +192,10 @@ export function RetrievalDebugPanel() {
             </span>
           </div>
 
+          <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-300">
+            <strong className="text-blue-400">Benchmark Scope Clarification:</strong> While expanded from N=1 to N=10, this is a strictly controlled engineering development benchmark. No claims of nationwide corpus accuracy or generalized production certainty are asserted.
+          </div>
+
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 rounded bg-slate-950 border border-slate-800">
               <span className="text-slate-500 text-[10px] uppercase">Recall@1</span>
@@ -254,10 +258,15 @@ export function RetrievalDebugPanel() {
       {testRoadmap.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3 text-xs">
-            <h4 className="font-bold text-white flex items-center gap-2">
-              <FlaskConical className="w-4 h-4 text-purple-400" />
-              Verified Standard Test Roadmap (IS 17526:2021)
-            </h4>
+            <div>
+              <h4 className="font-bold text-white flex items-center gap-2">
+                <FlaskConical className="w-4 h-4 text-purple-400" />
+                Verified Standard Test Roadmap (IS 17526:2021)
+              </h4>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Compiled testing parameter roadmap. The platform produces regulatory test specifications and apparatus schedules; it does not claim to physically execute laboratory experiments.
+              </p>
+            </div>
             <div className="space-y-2">
               {testRoadmap.map((t, idx) => (
                 <div key={idx} className="p-3 rounded bg-slate-950 border border-slate-800 space-y-1">
