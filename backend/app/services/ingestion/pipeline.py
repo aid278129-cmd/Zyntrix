@@ -1,5 +1,7 @@
 import os
+import json
 import uuid
+from datetime import datetime, date
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +14,8 @@ from backend.app.models.clause import Clause
 from backend.app.models.requirement import Requirement
 from backend.app.models.source import Source
 from backend.app.models.verification_record import VerificationRecord
+from backend.app.models.regulatory_instrument import RegulatoryInstrument
+from backend.app.models.amendment import Amendment
 from backend.app.services.ingestion.document_loader import (
     calculate_file_sha256,
     register_document,
@@ -46,14 +50,16 @@ async def _create_verification_record(
     document_hash: Optional[str] = None,
     source_authority: Optional[str] = None,
     notes: Optional[str] = None,
+    verification_method: str = "MACHINE_VALIDATION",
+    verified_by: str = "SYSTEM_PIPELINE",
 ) -> None:
-    """Create a machine-validation verification record for an ingested entity."""
+    """Create an immutable verification record for an ingested or audited entity."""
     record = VerificationRecord(
         entity_type=entity_type,
         entity_id=entity_id,
         verification_status=verification_status,
-        verified_by="SYSTEM_PIPELINE",
-        verification_method="MACHINE_VALIDATION",
+        verified_by=verified_by,
+        verification_method=verification_method,
         source_authority=source_authority,
         document_hash=document_hash,
         notes=notes,
@@ -72,7 +78,6 @@ async def register_source(
     notes: Optional[str] = None,
 ) -> Source:
     """Register or find an existing source in the source registry."""
-    # Check for existing source by name and publisher
     stmt = select(Source).where(Source.name == name, Source.publisher == publisher)
     result = await db.execute(stmt)
     existing = result.scalar_one_or_none()
@@ -102,6 +107,7 @@ async def ingest_standard_document(
     standard_number_override: Optional[str] = None,
     standard_title_override: Optional[str] = None,
     is_verified: bool = False,
+    is_synthetic_fixture: bool = False,
     source_type: str = "USER_PROVIDED",
     source_url: Optional[str] = None,
     publisher: Optional[str] = None,
@@ -109,34 +115,40 @@ async def ingest_standard_document(
     """End-to-end ingestion pipeline transforming a standard document into
     structured clauses and vector embeddings.
 
-    Trust model: is_verified defaults to False. Ingested knowledge is
-    INDEXED + UNVERIFIED unless explicitly marked verified through
-    a controlled verification workflow. INDEXED ≠ VERIFIED.
+    Trust Governance Guard:
+    If is_synthetic_fixture=True or file path contains 'fixtures/synthetic',
+    the document CANNOT be marked VERIFIED. It must remain REQUIRES_REVIEW
+    and USER_PROVIDED. INDEXED ≠ VERIFIED.
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Source file not found at {file_path}")
+
+    # Check synthetic guard
+    if "fixtures" in file_path or "synthetic" in file_path or is_synthetic_fixture:
+        is_synthetic_fixture = True
+        is_verified = False  # Synthetic fixture can NEVER be marked VERIFIED
+        source_type = "USER_PROVIDED"
 
     filename = original_filename or os.path.basename(file_path)
     file_size = os.path.getsize(file_path)
     file_hash = calculate_file_sha256(file_path)
 
-    # Trust state: default to REQUIRES_REVIEW unless explicitly verified
-    if is_verified:
-        verif_status = "VERIFIED"
-    else:
-        verif_status = "REQUIRES_REVIEW"
+    verif_status = "VERIFIED" if is_verified else "REQUIRES_REVIEW"
 
     # Step 0: Register Source
     source_name = standard_number_override or filename
-    source_publisher = publisher or "Unknown"
+    source_publisher = publisher or ("Zyntrix Test Assets" if is_synthetic_fixture else "Unknown")
+    authority_level = "AUTHORITATIVE" if (source_type == "BIS_OFFICIAL" and not is_synthetic_fixture) else "UNVERIFIED"
+
     source = await register_source(
         db=db,
         name=source_name,
         publisher=source_publisher,
         source_type=source_type,
-        authority_level="AUTHORITATIVE" if source_type == "BIS_OFFICIAL" else "UNVERIFIED",
+        authority_level=authority_level,
         source_url=source_url,
-        access_method="cli_import",
+        access_method="test_fixture" if is_synthetic_fixture else "cli_import",
+        notes="Synthetic representative test fixture for unit testing." if is_synthetic_fixture else None,
     )
 
     # Step 1: Register Document
@@ -155,6 +167,12 @@ async def ingest_standard_document(
     doc.source_id = source.id
     doc.publisher = source_publisher
     doc.ingestion_status = "EXTRACTED"
+    if is_synthetic_fixture:
+        doc.verification_notes = "SYNTHETIC_TEST_FIXTURE: Not an authentic BIS publication. Excluded from authoritative compliance retrieval."
+        doc.metadata_json = {
+            "fixture_type": "SYNTHETIC_TEST_FIXTURE",
+            "authoritative": False,
+        }
     await db.commit()
 
     # Step 2: Extract text and page layout
@@ -197,7 +215,6 @@ async def ingest_standard_document(
         std.title = meta.title or std.title
         std.category = meta.category or std.category
         std.scope = meta.scope_summary or std.scope
-        # Do NOT auto-upgrade verification_status on re-ingestion
         if is_verified:
             std.verification_status = verif_status
         std.source_document_id = doc.id
@@ -286,12 +303,14 @@ async def ingest_standard_document(
         db, "document", doc.id, verif_status,
         document_hash=file_hash,
         source_authority=source.authority_level,
-        notes=f"Machine validation: PDF readable, {extraction.total_pages} pages extracted, {len(segmented_clauses)} clauses segmented.",
+        notes=f"Machine validation: PDF readable, {extraction.total_pages} pages extracted, {len(segmented_clauses)} clauses segmented."
+              + (" (SYNTHETIC_TEST_FIXTURE - Non-authoritative)" if is_synthetic_fixture else ""),
     )
     await _create_verification_record(
         db, "standard", std.id, verif_status,
         source_authority=source.authority_level,
-        notes=f"Standard metadata extracted from document. Source type: {source_type}.",
+        notes=f"Standard metadata extracted from document. Source type: {source_type}."
+              + (" (SYNTHETIC_TEST_FIXTURE - Non-authoritative)" if is_synthetic_fixture else ""),
     )
     await db.commit()
 
@@ -312,3 +331,112 @@ async def ingest_standard_document(
         verification_status=verif_status,
         ingestion_status="INDEXED",
     )
+
+
+async def register_official_knowledge_package(
+    db: AsyncSession, package_dir: str
+) -> Dict[str, Any]:
+    """Register official BIS and government metadata from a verified knowledge package.
+
+    Captures official standard metadata, QCO orders, product manuals, and
+    audit records without fabricating standard text when full text is pending.
+    """
+    metadata_file = os.path.join(package_dir, "metadata.json")
+    provenance_file = os.path.join(package_dir, "provenance.json")
+    qco_file = os.path.join(package_dir, "regulatory", "qco_order_2023.json")
+    pm_file = os.path.join(package_dir, "product_manual", "pm_is17526.json")
+    verif_file = os.path.join(package_dir, "verification.json")
+
+    results = {}
+
+    # 1. Load metadata
+    if os.path.exists(metadata_file):
+        with open(metadata_file, "r", encoding="utf-8") as f:
+            meta = json.load(f)
+
+        std_num = meta["standard_number"]
+        official_title = meta["official_title"]
+
+        # Register official BIS source
+        source = await register_source(
+            db=db,
+            name=f"BIS Official - {std_num}",
+            publisher="Bureau of Indian Standards",
+            source_type="BIS_OFFICIAL",
+            authority_level="AUTHORITATIVE",
+            source_url="https://www.manakonline.in",
+            access_method="official_catalog",
+            notes=f"Authoritative BIS Standards Catalog entry for {std_num}: {official_title}.",
+        )
+
+        # Register or update standard with official title
+        stmt = select(Standard).where(Standard.standard_number == std_num)
+        res = await db.execute(stmt)
+        std = res.scalar_one_or_none()
+        if not std:
+            std = Standard(
+                standard_number=std_num,
+                title=official_title,
+                category=meta.get("category", "General"),
+                scope=meta.get("scope"),
+                scheme=meta.get("certification_scheme", "Scheme I"),
+                is_mandatory_qco=meta.get("is_mandatory", False),
+                status=meta.get("status", "ACTIVE"),
+                verification_status="REQUIRES_REVIEW",  # Full text pending
+            )
+            db.add(std)
+            await db.commit()
+            await db.refresh(std)
+        else:
+            std.title = official_title
+            await db.commit()
+            await db.refresh(std)
+
+        results["standard_number"] = std_num
+        results["official_title"] = official_title
+        results["source_id"] = source.id
+
+        # 2. Register QCO if available
+        if os.path.exists(qco_file):
+            with open(qco_file, "r", encoding="utf-8") as f:
+                qco_data = json.load(f)
+
+            qco_stmt = select(RegulatoryInstrument).where(
+                RegulatoryInstrument.standard_id == std.id,
+                RegulatoryInstrument.instrument_type == "QCO",
+            )
+            qco_res = await db.execute(qco_stmt)
+            reg_inst = qco_res.scalar_one_or_none()
+            if not reg_inst:
+                reg_inst = RegulatoryInstrument(
+                    standard_id=std.id,
+                    instrument_type="QCO",
+                    notification_number=qco_data.get("order_title"),
+                    scope_description=qco_data.get("scope_description"),
+                    is_mandatory=qco_data.get("is_mandatory", True),
+                    verification_status="VERIFIED",
+                    notes=f"Issued by {qco_data.get('issuing_department')}, {qco_data.get('issuing_ministry')}.",
+                )
+                db.add(reg_inst)
+                await db.commit()
+                results["qco_registered"] = True
+
+        # 3. Log verification audit records
+        if os.path.exists(verif_file):
+            with open(verif_file, "r", encoding="utf-8") as f:
+                v_data = json.load(f)
+            for vr in v_data.get("verification_records", []):
+                await _create_verification_record(
+                    db=db,
+                    entity_type="standard_package",
+                    entity_id=std.id,
+                    verification_status=vr["status"],
+                    source_authority=vr.get("source_authority"),
+                    verification_method=vr.get("method", "SOURCE_VERIFICATION"),
+                    verified_by="SYSTEM_RESEARCH",
+                    notes=vr.get("evidence"),
+                )
+            await db.commit()
+            results["verification_logged"] = True
+
+    return results

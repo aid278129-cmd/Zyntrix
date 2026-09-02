@@ -1,10 +1,11 @@
 {
-  "case_id": "CASE-DRINKWARE-001",
+  "case_id": "CASE-DRINKWARE-001-SYNTHETIC",
   "category": "Drinkware & Food Contact Containers",
   "product_name": "Double-Walled Stainless Steel Insulated Flask",
   "product_description": "750ml stainless steel vacuum insulated water flask with BPA-free polypropylene stopper and food-grade silicone gasket, designed for 24-hour temperature retention.",
-  "benchmark_scope": "Initial single-case verification benchmark (N=1). Not a statistically significant sample.",
-  "provenance_note": "Expected values are based on representative clause text from a programmatically generated IS 17526:2021 fixture PDF. The fixture is NOT sourced from an official BIS publication. Clause text is structurally representative but requires verification against an authentic source document.",
+  "benchmark_scope": "Unit pipeline verification benchmark against synthetic representative fixture (N=1). Strictly for mechanical extraction and retrieval logic validation.",
+  "provenance_note": "Expected values are verified against representative clause text from the synthetic fixture data/bis/fixtures/synthetic/IS_17526_2021_representative.pdf. This is a NON-AUTHORITATIVE test fixture and must never be used to certify regulatory compliance.",
+  "fixture_reference": "data/bis/fixtures/synthetic/IS_17526_2021_representative.pdf",
   "expected_attributes": {
     "product_name": "Double-Walled Stainless Steel Insulated Flask",
     "category": "Drinkware & Food Contact Containers",
@@ -16,7 +17,7 @@
   "expected_standards": [
     {
       "standard_number": "IS 17526:2021",
-      "title": "Commercial Beverage Coolers and Insulated Flasks — Specification",
+      "title": "Domestic Stainless Steel Vacuum Flask/Bottle",
       "scheme": "Scheme I (ISI Mark)",
       "is_mandatory_qco": true
     }
@@ -69,7 +70,8 @@
       "filename": "IS_17526_2021.pdf",
       "standard_number": "IS 17526:2021",
       "verification_status": "REQUIRES_REVIEW",
-      "provenance_note": "Programmatically generated fixture. Not sourced from official BIS publication."
+      "fixture_type": "SYNTHETIC_TEST_FIXTURE",
+      "provenance_note": "Programmatically generated fixture preserved for pipeline tests."
     }
   ]
 }

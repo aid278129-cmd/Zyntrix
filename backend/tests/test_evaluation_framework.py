@@ -15,7 +15,7 @@ def test_ground_truth_dataset_structure():
     with open(GROUND_TRUTH_CASE, "r") as f:
         case_data = json.load(f)
 
-    assert case_data["case_id"] == "CASE-DRINKWARE-001"
+    assert "CASE-DRINKWARE-001" in case_data["case_id"]
     assert "expected_attributes" in case_data
     assert "expected_standards" in case_data
     assert "expected_clauses" in case_data
