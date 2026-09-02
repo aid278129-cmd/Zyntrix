@@ -16,6 +16,7 @@ from backend.app.models.compliance_result import ComplianceResult
 from backend.app.models.decision_record import DecisionRecord
 from backend.app.models.laboratory import Laboratory
 from backend.app.models.conversation import Conversation
+from backend.app.models.assessment import Assessment, AssessmentSnapshot, AssessmentStatus
 
 __all__ = [
     "Base",
@@ -36,4 +37,7 @@ __all__ = [
     "DecisionRecord",
     "Laboratory",
     "Conversation",
+    "Assessment",
+    "AssessmentSnapshot",
+    "AssessmentStatus",
 ]

@@ -6,6 +6,7 @@ import { CitationViewer } from './components/CitationViewer';
 import { KnowledgeBaseExplorer } from './components/KnowledgeBaseExplorer';
 import { ProductWorkspace } from './components/ProductWorkspace';
 import { RetrievalDebugPanel } from './components/RetrievalDebugPanel';
+import { AssessmentWorkspace } from './components/AssessmentWorkspace';
 import { StatusBadge } from './components/StatusBadge';
 import {
   ShieldAlert,
@@ -25,7 +26,7 @@ import {
 export default function App() {
   const [health, setHealth] = useState(null);
   const [systemInfo, setSystemInfo] = useState(null);
-  const [activeTab, setActiveTab] = useState('knowledge');
+  const [activeTab, setActiveTab] = useState('assessment');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchHealth = async () => {
@@ -61,6 +62,7 @@ export default function App() {
   }, []);
 
   const tabs = [
+    { id: 'assessment', label: 'MSME Assessment Workspace (M4)', icon: FileCheck2 },
     { id: 'knowledge', label: 'Verified BIS Knowledge Base (M1)', icon: BookOpen },
     { id: 'diagnostics', label: 'Architecture & Health', icon: Cpu },
     { id: 'dna', label: 'Product Workspace & Evidence Graph (M2)', icon: Dna },
@@ -176,6 +178,10 @@ export default function App() {
         </div>
 
         {/* Tab Contents */}
+        {activeTab === 'assessment' && (
+          <AssessmentWorkspace />
+        )}
+
         {activeTab === 'knowledge' && (
           <KnowledgeBaseExplorer />
         )}

@@ -39,8 +39,19 @@ from backend.app.schemas.clause import (
 from backend.app.schemas.passport import CompliancePassportCard
 from backend.app.schemas.document import DocumentRegistryResponse, DocumentUploadResponse
 from backend.app.schemas.source import SourceResponse
-from backend.app.schemas.verification import VerificationRecordResponse
 from backend.app.schemas.knowledge_card import StandardKnowledgeCard
+from backend.app.schemas.assessment import (
+    AssessmentCreateRequest,
+    AssessmentUpdateRequest,
+    AssessmentSummaryResponse,
+    AssessmentSnapshotRecord,
+    CompliancePassport,
+    PassportTrustSection,
+    PassportSourceIndexItem,
+    AssessmentDetailResponse,
+    AssessmentChatRequest,
+    AssessmentChatResponse,
+)
 
 __all__ = [
     "APIResponse",
