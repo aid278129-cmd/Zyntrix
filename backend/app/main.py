@@ -1,0 +1,67 @@
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from backend.app.core.config import settings
+from backend.app.core.logging import logger, RequestLoggingMiddleware
+from backend.app.core.exceptions import ComplianceCompilerException, compliance_exception_handler
+from backend.app.api.health import router as health_router
+from backend.app.api import api_router
+from backend.app.database.postgres import init_db_extensions
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info(f"Starting {settings.PROJECT_NAME} (Team: {settings.PROJECT_TEAM}) v{settings.VERSION}")
+    logger.info(f"Environment: {settings.ENVIRONMENT} | SIH Problem: {settings.SIH_PROBLEM_ID}")
+    
+    # Attempt Postgres extensions initialization
+    await init_db_extensions()
+    
+    yield
+    
+    logger.info(f"Shutting down {settings.PROJECT_NAME}")
+
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    description="BIS Compliance Compiler - AI-powered Intelligent Assistant for Indian Standards & Compliance Intelligence (SIH 26107)",
+    version=settings.VERSION,
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+)
+
+# Exception handlers
+app.add_exception_handler(ComplianceCompilerException, compliance_exception_handler)
+
+# Custom logging & request ID middleware
+app.add_middleware(RequestLoggingMiddleware)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.ALLOWED_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Root-level health checks (/health, /health/db, /health/vector)
+app.include_router(health_router)
+
+# Versioned API routes (/api/v1/...)
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
+@app.get("/", tags=["Root"])
+async def root():
+    return {
+        "project": settings.PROJECT_NAME,
+        "team": settings.PROJECT_TEAM,
+        "sih_problem": settings.SIH_PROBLEM_ID,
+        "version": settings.VERSION,
+        "docs": "/docs",
+        "health": "/health",
+        "status": "operational",
+    }
