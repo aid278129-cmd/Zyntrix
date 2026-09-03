@@ -6,6 +6,7 @@ Product Input -> Product DNA -> Clarification -> Applicability -> Hybrid Retriev
 -> Evidence Graph -> Compliance Passport -> Point-in-time Snapshots.
 """
 import uuid
+import asyncio
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -172,7 +173,9 @@ class AssessmentService:
         )
         if db is not None:
             try:
-                db.add(prod)
+                res_add = db.add(prod)
+                if asyncio.iscoroutine(res_add):
+                    await res_add
             except Exception as exc:
                 logger.warning(f"DB prod add skipped: {exc}")
 
@@ -195,7 +198,9 @@ class AssessmentService:
         )
         if db is not None:
             try:
-                db.add(assessment)
+                res_add = db.add(assessment)
+                if asyncio.iscoroutine(res_add):
+                    await res_add
                 await db.commit()
                 await db.refresh(assessment)
             except Exception as exc:
@@ -239,7 +244,9 @@ class AssessmentService:
         )
         if db is not None:
             try:
-                db.add(snapshot)
+                res_add = db.add(snapshot)
+                if asyncio.iscoroutine(res_add):
+                    await res_add
                 await db.commit()
                 await db.refresh(snapshot)
             except Exception as exc:

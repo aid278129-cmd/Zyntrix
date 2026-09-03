@@ -1,7 +1,7 @@
 import sys
 import asyncio
 
-if sys.platform == "win32":
+if sys.platform == "win32" and sys.version_info < (3, 14):
     try:
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     except Exception:
