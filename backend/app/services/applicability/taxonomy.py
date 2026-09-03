@@ -181,6 +181,26 @@ def get_taxonomy_category(category_or_text: str) -> Optional[ProductCategoryDefi
             return cat
         if any(alias in clean for alias in cat.aliases):
             return cat
+
+    # Check against verified dataset categories
+    try:
+        from backend.app.services.retrieval.knowledge_registry import search_standards
+        matches = search_standards(category_or_text, top_k=1)
+        if matches:
+            m = matches[0]
+            cat_name = m.get("product_category", "Verified BIS Category")
+            return ProductCategoryDefinition(
+                canonical_category_id=f"CAT-DATASET-{m.get('standard_id')}",
+                category_name=cat_name,
+                aliases=[m.get("short_title", "").lower(), m.get("standard_number", "").lower()],
+                distinguishing_attributes=["product_name", "category"],
+                supported_rules=[f"APP-DATASET-{m.get('standard_id')}"],
+                supported_standards=[m.get("full_standard_code", m.get("standard_number"))],
+                coverage_state="COVERED",
+            )
+    except Exception:
+        pass
+
     return None
 
 

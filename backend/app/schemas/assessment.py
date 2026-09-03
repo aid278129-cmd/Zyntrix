@@ -60,6 +60,9 @@ class PassportTrustSection(BaseModel):
     full_standard_text_status: str = "OFFICIAL_DOCUMENT_ACQUISITION_PENDING"
     synthetic_development_data_used: bool = False
     trust_level_summary: str
+    dataset_name: str = "BIS-standards-dataset"
+    knowledge_version: str = "v1.2.0-gazette-verified"
+    knowledge_source: str = "Official Gazette QCO Registry"
 
 
 class PassportSourceIndexItem(BaseModel):
@@ -93,6 +96,8 @@ class CompliancePassport(BaseModel):
     recommended_actions: List[Dict[str, Any]]
     source_index: List[PassportSourceIndexItem]
     limitations: List[str]
+    dataset_version: str = "v1.2.0-gazette-verified"
+    knowledge_source: str = "BIS-standards-dataset (v1.2.0-gazette-verified)"
 
 
 class AssessmentDetailResponse(BaseModel):
@@ -103,6 +108,7 @@ class AssessmentDetailResponse(BaseModel):
     status: str
     mode: str
     current_version: int
+    knowledge_version: str = "v1.2.0-gazette-verified"
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None

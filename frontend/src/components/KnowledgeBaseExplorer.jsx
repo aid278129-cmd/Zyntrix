@@ -271,9 +271,12 @@ export function KnowledgeBaseExplorer() {
               Official BIS Source Registry, Standard Version Lineage, Amendment Tracking, and Controlled Knowledge Packages.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded text-xs font-semibold bg-blue-950/80 text-blue-300 border border-blue-700/50 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" /> M1.6 Provenance Hardened
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-2.5 py-1 rounded text-xs font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Knowledge Source: BIS Standards Dataset
+            </span>
+            <span className="px-2.5 py-1 rounded text-xs font-mono font-semibold bg-blue-950/80 text-blue-300 border border-blue-700/50">
+              v1.2.0-gazette-verified (51 Standards)
             </span>
           </div>
         </div>

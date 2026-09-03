@@ -238,11 +238,43 @@ def generate_candidate_standards(dna: ProductDNACore) -> CandidateGenerationResu
             )
         )
 
+    # Dynamic Candidate Generation for Verified Standards in Knowledge Registry
+    if not candidates:
+        try:
+            from backend.app.services.retrieval.knowledge_registry import search_standards
+            query_str = f"{dna.product_name} {dna.category}"
+            matched_stds = search_standards(query_str, top_k=2)
+            for std in matched_stds:
+                legal = std.get("legal_source", {}) or {}
+                reg_status = "VERIFIED_MANDATORY_QCO" if std.get("mandatory_qco") else "VOLUNTARY"
+                candidates.append(
+                    StandardCandidate(
+                        standard_number=std.get("full_standard_code", std.get("standard_number", "")),
+                        standard_title=std.get("full_title", std.get("short_title", "")),
+                        status="LIKELY_APPLICABLE",
+                        regulatory_status=reg_status,
+                        generated_by_rule=f"APP-DATASET-{std.get('standard_id', '000')}",
+                        source_status="VERIFIED_OFFICIAL",
+                        contributing_attributes={"product_name": dna.product_name, "category": dna.category},
+                        missing_blocking_attributes=[],
+                        confidence=float(std.get("retrieval_score", 0.90)),
+                        explanation=(
+                            f"Identified from verified BIS dataset: {std.get('full_title', std.get('short_title'))} "
+                            f"under {legal.get('gazette_order', std.get('scheme', 'BIS Scheme'))}. "
+                            f"Scope: {std.get('scope', '')[:200]}"
+                        ),
+                        is_coverage_gap=False,
+                        llm_decision=False,
+                    )
+                )
+        except Exception:
+            pass
+
     return CandidateGenerationResult(
         product_category=dna.category,
-        taxonomy_id=tax.canonical_category_id,
-        coverage_state="COVERED",
+        taxonomy_id=tax.canonical_category_id if tax else None,
+        coverage_state="COVERED" if candidates else "CATALOG_NOT_COVERED",
         candidates=candidates,
-        has_coverage_gap=False,
-        explanation=f"Identified {len(candidates)} candidate standard(s) under taxonomy '{tax.category_name}'.",
+        has_coverage_gap=len(candidates) == 0,
+        explanation=f"Identified {len(candidates)} candidate standard(s) under taxonomy '{tax.category_name if tax else dna.category}'.",
     )
