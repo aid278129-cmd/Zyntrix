@@ -24,6 +24,7 @@ import {
   FileText,
   AlertCircle,
   ExternalLink,
+  RotateCcw,
 } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 import { EvidenceGraphCanvas } from './EvidenceGraphCanvas';
@@ -45,9 +46,9 @@ export function AssessmentWorkspace() {
 
   // New Assessment Creation State
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newProdName, setNewProdName] = useState('ThermoSteel Domestic Stainless Steel Vacuum Flask 1000ml');
-  const [newCategory, setNewCategory] = useState('Drinkware & Food Contact Containers');
-  const [newDesc, setNewDesc] = useState('We manufacture a 1 litre stainless steel vacuum flask for domestic drinking water.');
+  const [newProdName, setNewProdName] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [newDesc, setNewDesc] = useState('');
   const [isAuthoritative, setIsAuthoritative] = useState(false);
 
   // Evidence Upload State
@@ -70,15 +71,8 @@ export function AssessmentWorkspace() {
         if (data.length > 0 && !selectedAssessmentId) {
           loadAssessment(data[0].assessment_id);
         } else if (data.length === 0) {
-          const initRes = await fetch('/api/v1/assessments/demo/reset', { method: 'POST' });
-          if (initRes.ok) {
-            const initData = await initRes.json();
-            setAssessment(initData);
-            setSelectedAssessmentId(initData.assessment_id);
-            if (initData.summary) {
-              setAssessmentsList([initData.summary]);
-            }
-          }
+          setAssessment(null);
+          setSelectedAssessmentId(null);
         }
       }
     } catch (err) {
@@ -236,28 +230,30 @@ export function AssessmentWorkspace() {
             </select>
           )}
 
-          <button
-            onClick={async () => {
-              setIsLoading(true);
-              try {
-                const res = await fetch('/api/v1/assessments/demo/reset', { method: 'POST' });
-                if (res.ok) {
-                  const data = await res.json();
-                  setAssessment(data);
-                  setSelectedAssessmentId(data.assessment_id);
-                  fetchAssessments();
+          {assessmentsList.length > 0 && (
+            <button
+              onClick={async () => {
+                if (window.confirm('Clear all assessments and start fresh?')) {
+                  setIsLoading(true);
+                  try {
+                    await fetch('/api/v1/assessments/clear', { method: 'POST' });
+                    setAssessment(null);
+                    setSelectedAssessmentId(null);
+                    setAssessmentsList([]);
+                  } catch (err) {
+                    console.warn('Clear error:', err);
+                  } finally {
+                    setIsLoading(false);
+                  }
                 }
-              } catch (err) {
-                console.warn('Demo reset error:', err);
-              } finally {
-                setIsLoading(false);
-              }
-            }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow-lg shrink-0"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Reset Golden Demo
-          </button>
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-red-950 text-slate-300 hover:text-red-300 border border-slate-700 hover:border-red-800/60 text-xs font-semibold transition shadow-lg shrink-0"
+              title="Clear all assessments and start with a fresh product"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Clear All
+            </button>
+          )}
 
           <button
             onClick={() => setShowCreateModal(true)}
@@ -298,7 +294,8 @@ export function AssessmentWorkspace() {
                   type="text"
                   value={newProdName}
                   onChange={(e) => setNewProdName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white font-mono"
+                  placeholder="e.g. Stainless Steel Thermal Bottle 1000ml, Immersion Water Heater 1500W"
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white font-mono placeholder:text-slate-600"
                   required
                 />
               </div>
@@ -309,18 +306,20 @@ export function AssessmentWorkspace() {
                   type="text"
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white font-mono"
+                  placeholder="e.g. Drinkware & Food Contact, Domestic Electrical Appliances, Toys"
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white font-mono placeholder:text-slate-600"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-slate-300 font-semibold block mb-1">Product Description / User Claim:</label>
+                <label className="text-slate-300 font-semibold block mb-1">Product Description / Technical Specifications:</label>
                 <textarea
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
                   rows={3}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white font-mono leading-relaxed"
+                  placeholder="Describe materials (e.g. SS 304, silicone gasket), capacity, wattage, intended usage..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white font-mono leading-relaxed placeholder:text-slate-600"
                   required
                 />
               </div>
@@ -1198,31 +1197,118 @@ export function AssessmentWorkspace() {
           />
         </div>
       ) : (
-        <div className="p-12 text-center text-slate-500 bg-slate-900 border border-slate-800 rounded-xl space-y-4">
-          <p className="text-sm font-medium text-slate-300">Ready to start compliance evaluation</p>
-          <p className="text-xs text-slate-500">Initialize the Golden SIH Demonstration Case with official DPIIT QCO 2023 rule base:</p>
-          <button
-            onClick={async () => {
-              setIsLoading(true);
-              try {
-                const res = await fetch('/api/v1/assessments/demo/reset', { method: 'POST' });
-                if (res.ok) {
-                  const data = await res.json();
-                  setAssessment(data);
-                  setSelectedAssessmentId(data.assessment_id);
-                  fetchAssessments();
-                }
-              } catch (err) {
-                console.warn('Demo reset error:', err);
-              } finally {
-                setIsLoading(false);
-              }
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow-lg"
-          >
-            <Sparkles className="w-4 h-4" />
-            Initialize Golden SIH Demo Assessment
-          </button>
+        <div className="max-w-2xl mx-auto my-6 bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl space-y-6">
+          <div className="text-center space-y-2 border-b border-slate-800 pb-6">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-400 mb-1">
+              <Plus className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-white">Start New Product Compliance Assessment</h3>
+            <p className="text-xs text-slate-400 max-w-lg mx-auto">
+              Enter your product specifications below. Zyntrix will dynamically determine applicable Indian Standards (BIS), Quality Control Orders (QCOs), and generate a requirement-by-requirement evidence roadmap.
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-800/60 text-xs text-blue-200 flex items-start gap-2.5">
+            <ShieldCheck className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="block font-bold text-blue-100 mb-0.5">Strict Zero-Hallucination Regulatory Gate</strong>
+              Product inputs capture your technical facts. Compliance status will remain <span className="font-mono text-amber-300 font-semibold">MISSING_EVIDENCE</span> until verified test reports or accredited laboratory certificates are uploaded.
+            </div>
+          </div>
+
+          <form onSubmit={handleCreateAssessment} className="space-y-5">
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                Product Trade Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={newProdName}
+                onChange={(e) => setNewProdName(e.target.value)}
+                placeholder="e.g. Stainless Steel Thermal Bottle 1000ml, Immersion Water Heater 1500W, Plastic Toy Car"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg px-3.5 py-2.5 text-sm text-white font-mono placeholder:text-slate-600 transition outline-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                Product Category / Industry Sector <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="e.g. Drinkware & Food Contact, Domestic Electrical Appliances, Toys, Steel & Civil"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg px-3.5 py-2.5 text-sm text-white font-mono placeholder:text-slate-600 transition outline-none"
+                required
+              />
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {[
+                  'Drinkware & Food Contact Containers',
+                  'Kitchen & Domestic Appliances',
+                  'Electronics & IT (CRS)',
+                  'Toys & Children Products',
+                  'Automotive & Helmets',
+                  'Civil, Steel & Cement',
+                ].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setNewCategory(cat)}
+                    className="text-[11px] px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                  >
+                    + {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                Technical Specifications & Materials <span className="text-red-400">*</span>
+              </label>
+              <textarea
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+                rows={3}
+                placeholder="Describe product materials (e.g. SS 304, food grade silicone, ABS plastic), capacity, voltage/wattage, insulation type, intended usage..."
+                className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-lg px-3.5 py-2.5 text-sm text-white font-mono placeholder:text-slate-600 transition outline-none"
+                required
+              />
+            </div>
+
+            <div className="flex items-center gap-2.5 p-3 rounded-lg bg-slate-950/60 border border-slate-800/80">
+              <input
+                type="checkbox"
+                id="inPlaceAuthMode"
+                checked={isAuthoritative}
+                onChange={(e) => setIsAuthoritative(e.target.checked)}
+                className="rounded bg-slate-950 border-slate-800 text-blue-600 focus:ring-0"
+              />
+              <label htmlFor="inPlaceAuthMode" className="text-xs text-slate-300">
+                <strong>Strict Authoritative Mode</strong> &mdash; Evaluate exclusively against verified official BIS Gazette Quality Control Orders.
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || !newProdName.trim() || !newCategory.trim() || !newDesc.trim()}
+              className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition shadow-lg shadow-blue-600/20 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Analyzing Product DNA & BIS Applicability...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Start BIS Compliance Assessment
+                </>
+              )}
+            </button>
+          </form>
         </div>
       )}
     </div>

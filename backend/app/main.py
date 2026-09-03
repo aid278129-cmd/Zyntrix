@@ -33,14 +33,6 @@ async def lifespan(app: FastAPI):
     await init_db_extensions()
     await create_tables_if_needed()
 
-    # Pre-seed in-memory golden demo for instant zero-latency availability
-    try:
-        from backend.app.services.assessment.memory_store import ensure_golden_demo_seeded
-        await ensure_golden_demo_seeded()
-        logger.info("Golden SIH Demo assessment pre-seeded successfully in memory.")
-    except Exception as exc:
-        logger.warning(f"Golden demo initialization notice: {exc}")
-
     yield
 
     logger.info(f"Shutting down {settings.PROJECT_NAME}")

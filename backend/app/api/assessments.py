@@ -54,9 +54,6 @@ async def list_assessments(db: Optional[AsyncSession] = Depends(get_db)):
             logger.warning(f"DB list_assessments notice: {exc}")
     
     mem_list = list_assessments_mem()
-    if not mem_list:
-        golden = await ensure_golden_demo_seeded()
-        mem_list = [golden]
     return [AssessmentService.compute_summary(a) for a in mem_list]
 
 
@@ -74,11 +71,12 @@ async def get_assessment(assessment_id: str, db: Optional[AsyncSession] = Depend
     if not assessment:
         assessment = get_assessment_mem(assessment_id)
     if not assessment:
-        mem_list = list_assessments_mem()
-        if mem_list:
-            assessment = mem_list[0]
-        else:
-            assessment = await ensure_golden_demo_seeded()
+        raise ComplianceCompilerException(
+            message=f"Assessment '{assessment_id}' not found.",
+            code="ASSESSMENT_NOT_FOUND",
+            status_code=404,
+            remediation="Create a new assessment with product details via POST /api/v1/assessments.",
+        )
     return await AssessmentService.get_assessment_detail(db, assessment)
 
 
@@ -413,6 +411,14 @@ async def chat_with_assessment(assessment_id: str, req: AssessmentChatRequest, d
     
     res_dict = AssessmentService.answer_assessment_question(assessment, req.message)
     return AssessmentChatResponse(**res_dict)
+
+
+@router.post("/clear", summary="Clear All Active Assessments")
+async def clear_active_assessments():
+    """Clear all active in-memory assessments so the user can start from a clean slate."""
+    from backend.app.services.assessment.memory_store import clear_assessments_mem
+    clear_assessments_mem()
+    return {"status": "cleared", "message": "All assessments have been cleared. Ready for fresh product entry."}
 
 
 @router.post("/demo/reset", response_model=AssessmentDetailResponse, summary="Reset/Initialize Golden SIH Demo Assessment")

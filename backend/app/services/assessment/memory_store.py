@@ -75,3 +75,13 @@ async def reset_golden_demo_mem() -> Assessment:
     req = AssessmentCreateRequest(**GOLDEN_DEMO_PRODUCT)
     asm = await AssessmentService.create_assessment(None, req)
     return asm
+
+
+def clear_assessments_mem() -> None:
+    """Clear all in-memory assessments and associated stores."""
+    ASSESSMENTS_STORE.clear()
+    SNAPSHOTS_STORE.clear()
+    PRODUCTS_STORE.clear()
+    EVIDENCE_STORE.clear()
+    LINKS_STORE.clear()
+
