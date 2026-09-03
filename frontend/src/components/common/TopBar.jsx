@@ -12,11 +12,16 @@ export function TopBar({
   onClearAll,
 }) {
   const navItems = [
+    { id: 'templates', label: 'Generate Template' },
     { id: 'overview', label: 'Overview' },
-    { id: 'analyze', label: 'Product Input & Specs' },
+    { id: 'analyze', label: 'Product Input' },
+    { id: 'workspace', label: 'Product DNA' },
     { id: 'standards', label: 'Standards & Gaps' },
     { id: 'assistant', label: 'Copilot' },
+    { id: 'passport', label: 'Passport' },
     { id: 'knowledge', label: 'BIS Catalog' },
+    { id: 'evaluation', label: 'Evaluation Console' },
+    { id: 'diagnostics', label: 'Architecture & Health' },
   ];
 
   return (

@@ -33,7 +33,6 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
 
   // BOM text state
   const [bomText, setBomText] = useState('');
-  const bomFileInputRef = useRef(null);
 
   const quickCategories = [
     'Kitchen & Domestic Appliances',
@@ -355,13 +354,12 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
   };
 
   // BOM Parser Handler
-  const handleParseBOM = async (contentOverride = null) => {
-    const rawContent = typeof contentOverride === 'string' ? contentOverride : bomText;
-    if (!rawContent.trim()) return;
+  const handleParseBOM = async () => {
+    if (!bomText.trim()) return;
     setValidationIssues([]);
 
     // Check for unfilled placeholder tokens
-    if (/\[FILL_HERE\]|TODO|REQUIRED_VALUE/i.test(rawContent)) {
+    if (/\[FILL_HERE\]|TODO|REQUIRED_VALUE/i.test(bomText)) {
       setValidationIssues([
         {
           code: 'INCOMPLETE_TEMPLATE_PLACEHOLDERS',
@@ -375,7 +373,7 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
     setExtractedNotice('Layer 1 BOM Ingestion: Multi-component tabular parser with asynchronous chunking...');
     try {
       const formData = new FormData();
-      formData.append('raw_content', rawContent);
+      formData.append('raw_content', bomText);
       const res = await fetch('/api/v1/ingest/bom', {
         method: 'POST',
         body: formData,
@@ -383,7 +381,7 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
       if (res.ok) {
         const data = await res.json();
         setExtractedNotice(`BOM Ingestion Complete: ${data.summary}`);
-        if (!productName) setProductName('Product Assembly (From BOM)');
+        if (!productName) setProductName('Electric Immersion Water Heater (From BOM)');
         
         const compLines = data.components.map((c) => `• ${c.name} (${c.material}) - ${c.specification} [Qty: ${c.quantity}]`).join('\n');
         const ratingsStr = Object.entries(data.electrical_ratings).map(([k, v]) => `${k}: ${v}`).join(', ');
@@ -403,21 +401,6 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
     } finally {
       setIsParsingFile(false);
     }
-  };
-
-  const handleBOMCSVUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result;
-      if (typeof content === 'string') {
-        setBomText(content);
-        setUploadedFileName(file.name);
-        handleParseBOM(content);
-      }
-    };
-    reader.readAsText(file);
   };
 
   const handleLoadSampleBOM = () => {
@@ -494,7 +477,7 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
               <span className="font-bold uppercase tracking-wider text-[10px] text-indigo-600 font-mono">
-                SIH ARCHITECTURE &bull; LAYER 1
+                PIPELINE ARCHITECTURE &bull; LAYER 1
               </span>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
               <span className="font-semibold text-slate-700 uppercase text-[10px]">
@@ -513,7 +496,7 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
             {/* Generate Template Button */}
             <button
               type="button"
-              onClick={() => setShowTemplateModal(true)}
+              onClick={() => (onNavigate ? onNavigate('templates') : setShowTemplateModal(true))}
               className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer shadow-2xs flex items-center gap-1.5"
               title="Generate a clean, fillable specification or BOM template"
             >
@@ -569,14 +552,14 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
           </div>
         </div>
 
-        {/* Regulatory Invariant Banner */}
+        {/* Regulatory Guidance Banner */}
         <div className="p-4 rounded-xl bg-indigo-50/80 border border-indigo-100 text-xs text-indigo-950 flex items-start gap-3 shadow-2xs">
           <span className="material-symbols-outlined text-indigo-600 text-[20px] shrink-0 mt-0.5">verified_user</span>
           <div>
             <strong className="block font-bold text-indigo-900 mb-0.5">
-              Strict Zero-Hallucination Invariant: USER TEXT &ne; EVIDENCE &ne; COMPLIANCE
+              Document Readiness & Evidence Policy
             </strong>
-            Document readiness evaluates input completeness only. Under the Zyntrix Evidence Gate, user inputs establish declared product claims (USER_CLAIM) and NEVER by themselves establish regulatory compliance or BIS ISI mark certification.
+            Document readiness evaluates input completeness. User inputs establish declared product claims (USER_CLAIM); regulatory compliance requires accredited laboratory test reports or verified documentary proof.
           </div>
         </div>
 
@@ -689,7 +672,7 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
           {/* Step 1: Input Mode Selector */}
           <div>
             <label className="text-xs font-bold text-slate-700 block mb-2">
-              Select Multi-Modal Input Mode (Slide 2 & 3):
+              Select Multi-Modal Input Mode:
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {[
@@ -849,21 +832,6 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="file"
-                    ref={bomFileInputRef}
-                    onChange={handleBOMCSVUpload}
-                    accept=".csv,text/csv"
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => bomFileInputRef.current?.click()}
-                    className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">upload_file</span>
-                    Upload CSV File
-                  </button>
                   <button
                     type="button"
                     onClick={() => handleDownloadTemplate('bom_csv')}
@@ -1080,23 +1048,6 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
               </p>
 
               <div className="space-y-2">
-                <div
-                  onClick={() => handleDownloadTemplate('sample_pdf')}
-                  className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-100/60 cursor-pointer transition flex items-center justify-between shadow-2xs"
-                >
-                  <div>
-                    <div className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-indigo-600 text-[18px]">picture_as_pdf</span>
-                      Sample Product Information Specification (.PDF)
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-600 text-white">RECOMMENDED</span>
-                    </div>
-                    <div className="text-[11px] text-indigo-700/80 mt-0.5">
-                      Reference visual guide showing exact layout, technical ratings, material grades & test data for automated extraction
-                    </div>
-                  </div>
-                  <span className="material-symbols-outlined text-indigo-600 text-[20px]">download</span>
-                </div>
-
                 <div
                   onClick={() => handleDownloadTemplate('spec_csv')}
                   className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 cursor-pointer transition flex items-center justify-between"

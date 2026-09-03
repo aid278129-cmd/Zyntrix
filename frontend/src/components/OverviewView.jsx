@@ -9,7 +9,7 @@ export function OverviewView({ assessmentsList = [], onNavigate, onSelectAssessm
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded font-mono">
-                SIH Problem Statement 26107
+                BIS Compliance Portal
               </span>
               <span className="text-xs text-slate-500">Bureau of Indian Standards Smart Automation</span>
             </div>
@@ -27,41 +27,6 @@ export function OverviewView({ assessmentsList = [], onNavigate, onSelectAssessm
             <span className="material-symbols-outlined text-[16px]">search</span>
             <span>Analyze a Product</span>
           </button>
-        </div>
-
-        {/* SIH Slide 4: Key Impact & Benefit Metrics Banner */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs border-l-4 border-l-amber-500">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Time Reduction</span>
-            <div className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">95%</div>
-            <p className="text-[11px] text-slate-500 mt-1">
-              3 Weeks of Gazette Reading & Consulting &rarr; <span className="text-emerald-700 font-semibold">3 Minutes</span> of Deterministic Analysis
-            </p>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs border-l-4 border-l-blue-500">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Cost Savings</span>
-            <div className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">80%</div>
-            <p className="text-[11px] text-slate-500 mt-1">
-              &#8377;50K - &#8377;5L consultant fees &rarr; <span className="text-emerald-700 font-semibold">&#8377;0 - &#8377;10K</span> maximum self-audit
-            </p>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs border-l-4 border-l-indigo-500">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">MSME Beneficiaries</span>
-            <div className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">63M+</div>
-            <p className="text-[11px] text-slate-500 mt-1">
-              Democratizes access for small manufacturers & startups across all 20,000+ standards
-            </p>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs border-l-4 border-l-emerald-500">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Market Opportunity</span>
-            <div className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">&#8377;31.5T</div>
-            <p className="text-[11px] text-slate-500 mt-1">
-              Unlocks dormant domestic manufacturing capability via rapid standard adoption
-            </p>
-          </div>
         </div>
 
         {/* Bento Grid Layout */}
@@ -107,54 +72,10 @@ export function OverviewView({ assessmentsList = [], onNavigate, onSelectAssessm
               </div>
             </div>
 
-            {/* Invariant Rule Banner */}
-            <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 text-xs text-amber-950 shadow-2xs">
-              <div className="flex items-center gap-1.5 font-bold mb-1">
-                <span className="material-symbols-outlined text-[16px] text-amber-700">shield</span>
-                <span>Zero-Hallucination Invariant Gate</span>
-              </div>
-              <p className="text-[11px] text-amber-900 leading-relaxed font-mono font-bold">
-                USER_TEXT &ne; EVIDENCE &ne; COMPLIANCE
-              </p>
-              <p className="text-[11px] text-amber-800 mt-1">
-                No requirement is marked satisfied without cryptographically verified laboratory test reports or documentary proof.
-              </p>
-            </div>
           </div>
 
-          {/* Right Column (8 cols): Active Assessments & 9-Layer Architecture */}
+          {/* Right Column (8 cols): Active Assessments */}
           <div className="lg:col-span-8 flex flex-col gap-6">
-            {/* Slide 3: 9-Stage Architecture Pipeline Stepper */}
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  9 Sequential Architecture Layers (Slide 3 Pipeline Flow)
-                </h2>
-                <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  Active & Operational
-                </span>
-              </div>
-              <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1.5 text-center">
-                {[
-                  { step: '1', title: 'Input Proc.', sub: 'OCR/Audio/BOM' },
-                  { step: '2', title: 'Product DNA', sub: 'JSON AST' },
-                  { step: '3', title: 'AI Orchestr.', sub: 'Agents Router' },
-                  { step: '4', title: 'Segmented KB', sub: 'IS + Services' },
-                  { step: '5', title: 'Applicability', sub: 'Rule Gate' },
-                  { step: '6', title: 'Clause RAG', sub: 'BM25 + Dense' },
-                  { step: '7', title: 'Gap Engine', sub: 'Verdict States' },
-                  { step: '8', title: 'Source Valid.', sub: 'Citation Guard' },
-                  { step: '9', title: 'Output Layer', sub: 'Passport/Graph' },
-                ].map((s) => (
-                  <div key={s.step} className="p-2 bg-slate-50 border border-slate-200 rounded-lg">
-                    <div className="text-[10px] font-mono font-bold text-indigo-600">{s.step}</div>
-                    <div className="text-[11px] font-bold text-slate-900 leading-tight mt-0.5">{s.title}</div>
-                    <div className="text-[9px] text-slate-400 mt-0.5 leading-none">{s.sub}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Product Assessments Table */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex-1">
               <div className="flex items-center justify-between mb-4">
@@ -237,104 +158,6 @@ export function OverviewView({ assessmentsList = [], onNavigate, onSelectAssessm
                   </table>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-
-        {/* Slide 4 & 5: Strategic Impact & Comparative Solution Matrix */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Strategic Impact Pillars (5 cols) */}
-          <div className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-            <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-indigo-600 text-[18px]">verified</span>
-              Three Strategic Impact Pillars (Slide 4)
-            </h2>
-            <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="font-bold text-slate-900 flex items-center gap-1 text-xs">
-                  <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                  Economic Impact (Unlocking Domestic Value Chains)
-                </div>
-                <p className="text-[11px] text-slate-600 mt-1">
-                  Speeds time-to-market by 4 to 8 weeks, reduces operational overhead for audits, and redirects capital back to MSME research.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="font-bold text-slate-900 flex items-center gap-1 text-xs">
-                  <span className="w-2 h-2 rounded-full bg-amber-600"></span>
-                  Social Impact (Democratizing Regulatory Access)
-                </div>
-                <p className="text-[11px] text-slate-600 mt-1">
-                  Vernacular language support bridges the gap for rural innovators, leveling the playing field between startups and corporate giants.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="font-bold text-slate-900 flex items-center gap-1 text-xs">
-                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                  Governance & Trust (Deterministic Zero-Trust Accuracy)
-                </div>
-                <p className="text-[11px] text-slate-600 mt-1">
-                  100% auditable citation links, slashes counterfeit manufacturing, and integrates cleanly with Manakonline & e-BIS portals.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Solution Comparison Matrix (7 cols) */}
-          <div className="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-indigo-600 text-[18px]">compare_arrows</span>
-                Comparison with Existing Solutions (Slide 5)
-              </h2>
-              <span className="text-[10px] font-mono text-slate-400">Competitive Benchmark</span>
-            </div>
-
-            <div className="overflow-x-auto border border-slate-200 rounded-lg">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200 text-[11px]">
-                  <tr>
-                    <th className="py-2.5 px-3">Feature Dimension</th>
-                    <th className="py-2.5 px-3 text-indigo-700 font-bold">Zyntrix Compiler</th>
-                    <th className="py-2.5 px-3 text-slate-500">Manual Consultants</th>
-                    <th className="py-2.5 px-3 text-slate-500">Generic LLMs</th>
-                    <th className="py-2.5 px-3 text-slate-500">BIS Portal</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-[11px]">
-                  {[
-                    { feat: 'Clause-Level Retrieval', z: true, m: false, g: false, b: false },
-                    { feat: 'AI-Powered Gap Detection', z: true, m: false, g: false, b: false },
-                    { feat: 'Evidence Validation', z: true, m: false, g: false, b: false },
-                    { feat: 'Hallucination Guard', z: true, m: false, g: false, b: false },
-                    { feat: 'Multi-Modal Input (Voice/PDF)', z: true, m: false, g: true, b: false },
-                    { feat: 'Automated Lab Recommendations', z: true, m: false, g: false, b: false },
-                    { feat: 'Real-Time Standard Updates', z: true, m: false, g: false, b: false },
-                  ].map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80">
-                      <td className="py-2 px-3 font-medium text-slate-800">{row.feat}</td>
-                      <td className="py-2 px-3">
-                        <span className="text-emerald-600 font-bold text-sm">&#10003;</span>
-                      </td>
-                      <td className="py-2 px-3">
-                        <span className="text-rose-400 text-sm">&#10007;</span>
-                      </td>
-                      <td className="py-2 px-3">
-                        {row.g ? (
-                          <span className="text-emerald-600 font-bold text-sm">&#10003;</span>
-                        ) : (
-                          <span className="text-rose-400 text-sm">&#10007;</span>
-                        )}
-                      </td>
-                      <td className="py-2 px-3">
-                        <span className="text-rose-400 text-sm">&#10007;</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         </div>

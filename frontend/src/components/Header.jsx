@@ -42,7 +42,7 @@ export function Header({ health, isRefreshing, onRefresh }) {
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              SIH Problem Statement 26107 &bull; Smart Automation &bull; Evidence-Backed Compliance Intelligence
+              Bureau of Indian Standards &bull; Smart Automation &bull; Evidence-Backed Compliance Intelligence
             </p>
           </div>
         </div>

@@ -968,7 +968,7 @@ export function KnowledgeBaseExplorer() {
             <div>
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-indigo-600" />
-                SIH Real Source & Provenance Audit Panel
+                Real Source & Provenance Audit Panel
               </h3>
               <p className="text-xs text-slate-500 mt-1">
                 Full transparency for evaluators: Decoupling official statutory metadata from pending full-text acquisition.

@@ -232,7 +232,7 @@ export function ProductWorkspace() {
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
               <span className="font-bold uppercase tracking-wider text-[10px] text-indigo-600 font-mono">
-                SIH ARCHITECTURE &bull; LAYER 2
+                PIPELINE ARCHITECTURE &bull; LAYER 2
               </span>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
               <span className="font-semibold text-slate-700 uppercase text-[10px]">

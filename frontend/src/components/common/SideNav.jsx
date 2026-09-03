@@ -2,11 +2,16 @@ import React from 'react';
 
 export function SideNav({ currentView, onNavigate, onNewAnalysis, assessmentsCount = 0, standardsCount = 51 }) {
   const navItems = [
-    { id: 'overview', step: '01', label: 'Compliance Overview', icon: 'dashboard' },
-    { id: 'analyze', step: '02', label: 'Product Input & Specs', icon: 'analytics' },
-    { id: 'standards', step: '03', label: 'BIS Standards & Gaps', icon: 'gavel' },
-    { id: 'assistant', step: '04', label: 'Compliance Copilot', icon: 'smart_toy' },
-    { id: 'knowledge', step: '05', label: 'BIS Standards Catalog', icon: 'menu_book' },
+    { id: 'templates', step: '01', label: 'Generate Template', icon: 'description' },
+    { id: 'overview', step: '02', label: 'Compliance Overview', icon: 'dashboard' },
+    { id: 'analyze', step: '03', label: 'Product Input', icon: 'analytics' },
+    { id: 'workspace', step: '04', label: 'Product DNA', icon: 'fingerprint' },
+    { id: 'standards', step: '05', label: 'BIS Standards & Gaps', icon: 'gavel' },
+    { id: 'assistant', step: '06', label: 'Compliance Copilot', icon: 'smart_toy' },
+    { id: 'passport', step: '07', label: 'Compliance Passport', icon: 'verified_user' },
+    { id: 'knowledge', step: '08', label: 'BIS Standards Catalog', icon: 'menu_book' },
+    { id: 'evaluation', step: '09', label: 'Evaluation Console (M5)', icon: 'bar_chart' },
+    { id: 'diagnostics', step: '10', label: 'Architecture & Health', icon: 'memory' },
   ];
 
   return (
@@ -72,11 +77,11 @@ export function SideNav({ currentView, onNavigate, onNewAnalysis, assessmentsCou
       <div className="pt-3 border-t border-slate-100 mt-auto">
         <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-500 flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-slate-700">SIH PS 26107</span>
+            <span className="font-bold text-slate-700">Compliance Engine</span>
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
           </div>
           <p className="text-[10px] text-slate-400 leading-tight">
-            51 Verified BIS Gazette Standards &bull; Zero-Hallucination Gate
+            51 Verified BIS Gazette Standards &bull; Real-Time Index
           </p>
         </div>
       </div>
