@@ -647,7 +647,7 @@ export function AssessmentWorkspace() {
                               </div>
                               <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                                 <span className="text-slate-500">LLM Decision Authority:</span>
-                                <span className="font-bold text-emerald-700">0.0% (Zero Hallucination Guaranteed)</span>
+                                <span className="font-bold text-emerald-700">0.0% (Zero LLM Regulatory Authority • Evidence-Grounded)</span>
                               </div>
                               {app.decision_trace?.product_facts && app.decision_trace.product_facts.length > 0 && (
                                 <div className="pt-1">

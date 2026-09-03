@@ -273,7 +273,7 @@ export function RetrievalDebugPanel() {
             </span>
           </div>
           <div className="p-3 rounded-lg bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-950">
-            All tested clauses mapped to authoritative Gazette citations with zero hallucinations.
+            All tested clauses mapped to authoritative Gazette citations with deterministic grounding.
           </div>
         </div>
       )}
