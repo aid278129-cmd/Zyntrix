@@ -33,6 +33,15 @@ class StructuredEvidence(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     evidence_hash: Optional[str] = None
 
+    # M9 Deep Evidence Metadata & Freshness
+    report_number: Optional[str] = None
+    issuing_authority: str = "LAB_REPORT"
+    standard_tested: Optional[str] = None
+    issue_date: Optional[str] = None
+    document_identity: Optional[str] = None
+    evidence_freshness_years: Optional[float] = 0.0
+    verification_state: str = "VERIFIED"
+
     def model_post_init(self, __context: Any) -> None:
         if self.page is not None and self.page_number is None:
             self.page_number = self.page
@@ -46,6 +55,18 @@ class StructuredEvidence(BaseModel):
             self.authority = self.source_authority
         elif not self.source_authority and self.authority:
             self.source_authority = self.authority
+        if not self.document_identity and self.document_id:
+            self.document_identity = self.document_id
+        elif not self.document_id and self.document_identity:
+            self.document_id = self.document_identity
+        if not self.verification_state and self.verification_status:
+            self.verification_state = self.verification_status
+        elif not self.verification_status and self.verification_state:
+            self.verification_status = self.verification_state
+        if not self.issuing_authority and self.source_authority:
+            self.issuing_authority = self.source_authority
+        elif not self.source_authority and self.issuing_authority:
+            self.source_authority = self.issuing_authority
         if not self.evidence_hash and self.source_text:
             self.evidence_hash = hashlib.sha256(self.source_text.encode("utf-8")).hexdigest()
 
@@ -122,6 +143,7 @@ def extract_evidence_from_snippet(
     page: Optional[int] = None,
     authority: str = "LAB_REPORT",
     assessment_id: Optional[str] = None,
+    target_standard: Optional[str] = None,
 ) -> List[StructuredEvidence]:
     """Extract structured evidence parameters from document snippet or lab test report text.
     
@@ -136,6 +158,57 @@ def extract_evidence_from_snippet(
     evidences: List[StructuredEvidence] = []
     text_lower = clean_snippet.lower()
 
+    # Extract Document Identity, Report Number, Tested Standard, and Dates
+    rep_search = re.search(r"(?:report|cert|ref|certificate|lab\s*no)[\s#:\.\-]*([A-Za-z0-9\/\-]{4,25})", clean_snippet, re.I)
+    rep_num = rep_search.group(1) if rep_search else None
+
+    std_search = re.search(r"\bis\s*(\d{4,6}(?:\s*\([^\)]+\))?(?::\d{4})?)\b", clean_snippet, re.I)
+    std_num = f"IS {std_search.group(1)}" if std_search else None
+
+    date_search = re.search(r"\b(20\d{2})\b", clean_snippet)
+    issue_yr = int(date_search.group(1)) if date_search else None
+    fresh_years = round(2026 - issue_yr, 1) if issue_yr else 0.0
+    issue_d_str = f"{issue_yr}-01-01" if issue_yr else None
+    is_outdated = fresh_years > 3.0
+
+    # Incompatible Standard Gate
+    is_incompatible = False
+    if target_standard and std_num:
+        clean_target = target_standard.lower().replace(" ", "").split(":")[0]
+        clean_std = std_num.lower().replace(" ", "").split(":")[0]
+        if clean_target[:7] != clean_std[:7]:
+            is_incompatible = True
+    elif not target_standard and std_num:
+        # Default assessment scope is IS 17526:2021
+        if any(bad in std_num.lower() for bad in ["9873", "302", "4151", "12345", "14643"]):
+            is_incompatible = True
+
+    if is_incompatible:
+        return [
+            StructuredEvidence(
+                evidence_id=f"EV-WRONG-STD-{page or 1}",
+                assessment_id=assessment_id,
+                document_id=document_id or "DOC-INCOMPATIBLE",
+                evidence_type="INCOMPATIBLE_STANDARD",
+                source_type="OTHER",
+                source_authority="INCOMPATIBLE_STANDARD",
+                verification_status="REJECTED",
+                verification_state="REJECTED",
+                extracted_claim=f"Document references incompatible standard {std_num} outside assessment scope {target_standard or 'IS 17526:2021'}.",
+                attribute="incompatible_standard",
+                raw_value="INCOMPATIBLE",
+                normalized_value=None,
+                page_number=page,
+                source_excerpt=clean_snippet[:250],
+                source_text=clean_snippet[:250],
+                authority="INCOMPATIBLE_STANDARD",
+                report_number=rep_num,
+                standard_tested=std_num,
+                issue_date=issue_d_str,
+                evidence_freshness_years=fresh_years,
+            )
+        ]
+
     # 1. Temperature / Heat retention parameter (e.g. 64.5 deg C)
     temp_search = re.search(
         r"(?:temperature|heat retention|thermal performance|water temp)[^\d\n]*([\d\.]+\s*(?:°\s*c|deg\s*c|c\b))",
@@ -146,6 +219,9 @@ def extract_evidence_from_snippet(
         raw_v = temp_search.group(1)
         norm_v, unit = normalize_evidence_units(raw_v)
         ev_id = f"EV-TEMP-{page or 1}-{int(norm_v)}"
+        claim_str = f"Tested heat retention water temperature {norm_v}°{unit} after 6 hours."
+        if is_outdated:
+            claim_str += f" [WARNING: Stale evidence - issued {fresh_years} years ago; annual verification required]"
         evidences.append(
             StructuredEvidence(
                 evidence_id=ev_id,
@@ -154,8 +230,9 @@ def extract_evidence_from_snippet(
                 evidence_type=evidence_type,
                 source_type="LABORATORY" if "LAB" in authority else "MANUFACTURER",
                 source_authority=authority,
-                verification_status="VERIFIED" if authority in ("LAB_REPORT", "NABL_ACCREDITED_LAB", "BIS_OFFICIAL") else "REQUIRES_REVIEW",
-                extracted_claim=f"Tested heat retention water temperature {norm_v}°{unit} after 6 hours.",
+                verification_status="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if authority in ("LAB_REPORT", "NABL_ACCREDITED_LAB", "BIS_OFFICIAL") else "REQUIRES_REVIEW"),
+                verification_state="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if authority in ("LAB_REPORT", "NABL_ACCREDITED_LAB", "BIS_OFFICIAL") else "REQUIRES_REVIEW"),
+                extracted_claim=claim_str,
                 attribute="tested_heat_retention_temp",
                 raw_value=raw_v,
                 normalized_value=norm_v,
@@ -167,6 +244,10 @@ def extract_evidence_from_snippet(
                 extraction_method="STRUCTURED_PARSE",
                 extraction_confidence=0.98,
                 authority=authority,
+                report_number=rep_num,
+                standard_tested=std_num,
+                issue_date=issue_d_str,
+                evidence_freshness_years=fresh_years,
             )
         )
 
@@ -184,6 +265,9 @@ def extract_evidence_from_snippet(
             passed = False
 
         ev_id = f"EV-LEAK-{page or 1}"
+        claim_str = "10-minute inversion test: zero leakage or moisture seepage confirmed." if passed else "Leakage test failed."
+        if is_outdated:
+            claim_str += f" [WARNING: Stale evidence - issued {fresh_years} years ago; annual verification required]"
         evidences.append(
             StructuredEvidence(
                 evidence_id=ev_id,
@@ -192,8 +276,9 @@ def extract_evidence_from_snippet(
                 evidence_type=evidence_type,
                 source_type="LABORATORY" if "LAB" in authority else "MANUFACTURER",
                 source_authority=authority,
-                verification_status="VERIFIED" if authority in ("LAB_REPORT", "NABL_ACCREDITED_LAB", "BIS_OFFICIAL") else "REQUIRES_REVIEW",
-                extracted_claim="10-minute inversion test: zero leakage or moisture seepage confirmed." if passed else "Leakage test failed.",
+                verification_status="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if authority in ("LAB_REPORT", "NABL_ACCREDITED_LAB", "BIS_OFFICIAL") else "REQUIRES_REVIEW"),
+                verification_state="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if authority in ("LAB_REPORT", "NABL_ACCREDITED_LAB", "BIS_OFFICIAL") else "REQUIRES_REVIEW"),
+                extracted_claim=claim_str,
                 attribute="leakage_test_result",
                 raw_value="PASSED" if passed else "FAILED",
                 normalized_value=1.0 if passed else 0.0,
@@ -205,6 +290,10 @@ def extract_evidence_from_snippet(
                 extraction_method="STRUCTURED_PARSE",
                 extraction_confidence=0.95,
                 authority=authority,
+                report_number=rep_num,
+                standard_tested=std_num,
+                issue_date=issue_d_str,
+                evidence_freshness_years=fresh_years,
             )
         )
 
@@ -229,7 +318,8 @@ def extract_evidence_from_snippet(
                 evidence_type=ev_type,
                 source_type="MANUFACTURER" if "mill" in text_lower else "LABORATORY",
                 source_authority=authority,
-                verification_status="VERIFIED" if ("mill" in text_lower or "cert" in text_lower or "LAB" in authority) else "REQUIRES_REVIEW",
+                verification_status="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if ("mill" in text_lower or "cert" in text_lower or "LAB" in authority) else "REQUIRES_REVIEW"),
+                verification_state="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if ("mill" in text_lower or "cert" in text_lower or "LAB" in authority) else "REQUIRES_REVIEW"),
                 extracted_claim=f"Material grade certified as {grade} (IS 6911 chemical composition).",
                 attribute="material_grade_verified",
                 raw_value=grade,
@@ -242,6 +332,10 @@ def extract_evidence_from_snippet(
                 extraction_method="STRUCTURED_PARSE",
                 extraction_confidence=0.96,
                 authority=authority,
+                report_number=rep_num,
+                standard_tested=std_num,
+                issue_date=issue_d_str,
+                evidence_freshness_years=fresh_years,
             )
         )
 
@@ -259,7 +353,8 @@ def extract_evidence_from_snippet(
                 evidence_type=evidence_type,
                 source_type="LABORATORY" if "LAB" in authority else "MANUFACTURER",
                 source_authority=authority,
-                verification_status="VERIFIED" if authority in ("LAB_REPORT", "NABL_ACCREDITED_LAB", "BIS_OFFICIAL") else "REQUIRES_REVIEW",
+                verification_status="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if authority in ("LAB_REPORT", "NABL_ACCREDITED_LAB", "BIS_OFFICIAL") else "REQUIRES_REVIEW"),
+                verification_state="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if authority in ("LAB_REPORT", "NABL_ACCREDITED_LAB", "BIS_OFFICIAL") else "REQUIRES_REVIEW"),
                 extracted_claim=f"Measured product nominal capacity: {norm_c} {u_c}.",
                 attribute="capacity_ml",
                 raw_value=raw_c,
@@ -272,6 +367,9 @@ def extract_evidence_from_snippet(
                 extraction_method="STRUCTURED_PARSE",
                 extraction_confidence=0.97,
                 authority=authority,
+                report_number=rep_num,
+                standard_tested=std_num,
+                issue_date=issue_d_str,
             )
         )
 
@@ -300,9 +398,127 @@ def extract_evidence_from_snippet(
                 extraction_method="STRUCTURED_PARSE",
                 extraction_confidence=0.95,
                 authority=authority,
+                report_number=rep_num,
+                standard_tested=std_num,
+                issue_date=issue_d_str,
+                evidence_freshness_years=fresh_years,
+                verification_state="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if marked else "REQUIRES_REVIEW"),
             )
         )
-    # 5. If no technical parameters matched, check for wrong-standard or irrelevant document
+
+    # 6. Toys: Small parts cylinder test (Clause 4.4 IS 9873)
+    if any(k in text_lower for k in ["small part", "cylinder test", "choking"]):
+        passed = ("no small part" in text_lower or "zero detachment" in text_lower or "pass" in text_lower) and "failed" not in text_lower
+        ev_id = f"EV-TOY-CHOKE-{page or 1}"
+        evidences.append(
+            StructuredEvidence(
+                evidence_id=ev_id,
+                assessment_id=assessment_id,
+                document_id=document_id or f"DOC-{authority}",
+                evidence_type="TEST_REPORT",
+                source_type="LABORATORY",
+                source_authority=authority,
+                verification_status="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if "LAB" in authority else "REQUIRES_REVIEW"),
+                extracted_claim="Small parts test: no detachment, no small parts fit into cylinder." if passed else "Failed small parts choking hazard test.",
+                attribute="small_parts_choke_test",
+                raw_value="PASSED" if passed else "FAILED",
+                normalized_value=1.0 if passed else 0.0,
+                page_number=page,
+                source_excerpt=clean_snippet[:250],
+                source_text=clean_snippet[:250],
+                authority=authority,
+                report_number=rep_num,
+                standard_tested=std_num,
+                issue_date=issue_d_str,
+                evidence_freshness_years=fresh_years,
+            )
+        )
+
+    # 7. Toys: Sharp Edges and Sharp Points (Clause 4.6, 4.7 IS 9873)
+    if any(k in text_lower for k in ["sharp edge", "sharp point", "ptfe tape"]):
+        passed = ("no sharp" in text_lower or "passed" in text_lower or "zero sharp" in text_lower) and "failed" not in text_lower
+        ev_id = f"EV-TOY-EDGE-{page or 1}"
+        evidences.append(
+            StructuredEvidence(
+                evidence_id=ev_id,
+                assessment_id=assessment_id,
+                document_id=document_id or f"DOC-{authority}",
+                evidence_type="TEST_REPORT",
+                source_type="LABORATORY",
+                source_authority=authority,
+                verification_status="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if "LAB" in authority else "REQUIRES_REVIEW"),
+                extracted_claim="Sharp edge & point test: no sharp edges cutting PTFE tape, zero sharp points." if passed else "Sharp edges or points detected.",
+                attribute="sharp_edges_test",
+                raw_value="PASSED" if passed else "FAILED",
+                normalized_value=1.0 if passed else 0.0,
+                page_number=page,
+                source_excerpt=clean_snippet[:250],
+                source_text=clean_snippet[:250],
+                authority=authority,
+                report_number=rep_num,
+                standard_tested=std_num,
+                issue_date=issue_d_str,
+                evidence_freshness_years=fresh_years,
+            )
+        )
+
+    # 8. Electrical Safety: Dielectric Strength (Clause 13 IS 302)
+    if any(k in text_lower for k in ["dielectric", "high voltage", "breakdown", "insulation resistance"]):
+        passed = ("no breakdown" in text_lower or "withstood" in text_lower or "passed" in text_lower) and "breakdown observed" not in text_lower
+        ev_id = f"EV-ELEC-DIEL-{page or 1}"
+        evidences.append(
+            StructuredEvidence(
+                evidence_id=ev_id,
+                assessment_id=assessment_id,
+                document_id=document_id or f"DOC-{authority}",
+                evidence_type="TEST_REPORT",
+                source_type="LABORATORY",
+                source_authority=authority,
+                verification_status="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if "LAB" in authority else "REQUIRES_REVIEW"),
+                extracted_claim="Dielectric strength: 1000V/1250V AC applied with no flashover or breakdown." if passed else "Dielectric insulation breakdown observed.",
+                attribute="dielectric_strength_test",
+                raw_value="PASSED" if passed else "FAILED",
+                normalized_value=1.0 if passed else 0.0,
+                page_number=page,
+                source_excerpt=clean_snippet[:250],
+                source_text=clean_snippet[:250],
+                authority=authority,
+                report_number=rep_num,
+                standard_tested=std_num,
+                issue_date=issue_d_str,
+                evidence_freshness_years=fresh_years,
+            )
+        )
+
+    # 9. Electrical Safety: Abnormal Operation Boil-Dry (Clause 19 IS 302)
+    if any(k in text_lower for k in ["boil dry", "abnormal operation", "thermal cut-out", "thermal cutoff"]):
+        passed = ("operated" in text_lower or "cut off" in text_lower or "passed" in text_lower) and "failed" not in text_lower
+        ev_id = f"EV-ELEC-BOILDRY-{page or 1}"
+        evidences.append(
+            StructuredEvidence(
+                evidence_id=ev_id,
+                assessment_id=assessment_id,
+                document_id=document_id or f"DOC-{authority}",
+                evidence_type="TEST_REPORT",
+                source_type="LABORATORY",
+                source_authority=authority,
+                verification_status="REQUIRES_REVIEW" if is_outdated else ("VERIFIED" if "LAB" in authority else "REQUIRES_REVIEW"),
+                extracted_claim="Abnormal operation test: thermal cut-out operated reliably under boil-dry condition." if passed else "Thermal cutoff failed to operate.",
+                attribute="boil_dry_cutoff_test",
+                raw_value="PASSED" if passed else "FAILED",
+                normalized_value=1.0 if passed else 0.0,
+                page_number=page,
+                source_excerpt=clean_snippet[:250],
+                source_text=clean_snippet[:250],
+                authority=authority,
+                report_number=rep_num,
+                standard_tested=std_num,
+                issue_date=issue_d_str,
+                evidence_freshness_years=fresh_years,
+            )
+        )
+
+    # If no technical parameters matched, check for wrong-standard or irrelevant document
     if not evidences:
         is_wrong_std = bool(re.search(r"\bis\s*(9873|302|4151|12345|14643)\b", text_lower))
         if is_wrong_std:

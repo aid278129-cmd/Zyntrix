@@ -88,6 +88,18 @@ def detect_missing_attributes(dna: ProductDNACore) -> List[ClarificationRequirem
                 )
             )
 
+    # Category: Toys & Children's Products (IS 9873 (Part 1):2019)
+    elif dna.category == "Toys & Children's Products" or "toy" in dna.category.lower() or "toy" in dna.product_name.lower():
+        if "target_age_months" not in attr_names and "target_age" not in attr_names:
+            clarifications.append(
+                ClarificationRequirement(
+                    attribute_name="target_age_months",
+                    reason="IS 9873 (Part 1):2019 Clause 4.4 mandates strict small parts cylinder test for toys intended for children under 36 months.",
+                    options=["Under 36 months (0-3 years)", "36 months and above (3-14 years)"],
+                    criticality="HIGH",
+                )
+            )
+
     return clarifications
 
 

@@ -77,6 +77,30 @@ TAXONOMY_REGISTRY: Dict[str, ProductCategoryDefinition] = {
         supported_standards=["IS 302-2-15:2009"],
         coverage_state="COVERED",
     ),
+    "CAT-TOYS": ProductCategoryDefinition(
+        canonical_category_id="CAT-TOYS",
+        category_name="Toys & Children's Products",
+        aliases=[
+            "toy", "toys", "children toy", "kids toy", "plastic toy", "plush toy",
+            "rattle", "doll", "toy car", "puzzle toy", "teether", "action figure"
+        ],
+        distinguishing_attributes=["target_age_months", "materials", "has_small_parts"],
+        supported_rules=["APP-TOYS-001"],
+        supported_standards=["IS 9873 (Part 1):2019"],
+        coverage_state="COVERED",
+    ),
+    "CAT-HELMETS": ProductCategoryDefinition(
+        canonical_category_id="CAT-HELMETS",
+        category_name="Protective Equipment & Helmets",
+        aliases=[
+            "helmet", "helmets", "two wheeler helmet", "motorcycle helmet", "rider helmet",
+            "protective headgear", "scooter helmet", "full face helmet"
+        ],
+        distinguishing_attributes=["vehicle_type", "materials", "has_visor"],
+        supported_rules=["APP-HELMET-001"],
+        supported_standards=["IS 4151:2015"],
+        coverage_state="COVERED",
+    ),
     "CAT-GENERAL-GOODS": ProductCategoryDefinition(
         canonical_category_id="CAT-GENERAL-GOODS",
         category_name="General Goods",
@@ -119,6 +143,32 @@ REQUIRED_ATTRIBUTE_PROFILES: Dict[str, RequiredAttributeProfile] = {
         },
         applicability_dependencies=["Electrical Appliances for Domestic Use QCO"],
         evidence_dependencies=["IS 302-1 Electrical Safety Test Report"],
+    ),
+    "IS 9873 (Part 1):2019": RequiredAttributeProfile(
+        standard_or_rule_id="IS 9873 (Part 1):2019",
+        product_category="Toys & Children's Products",
+        blocking_attributes=["target_age_months"],
+        conditionally_required_attributes={"has_small_parts": "Required to assess choking hazard cylinder test under 36 months"},
+        optional_attributes=["materials", "battery_operated"],
+        clarification_priority={
+            "target_age_months": "HIGH",
+            "has_small_parts": "HIGH",
+        },
+        applicability_dependencies=["DPIIT Toys (Quality Control) Order 2020"],
+        evidence_dependencies=["NABL Accredited Mechanical Toy Test Report (Clause 4.4 Small Parts, Clause 4.6 Sharp Edges)"],
+    ),
+    "IS 4151:2015": RequiredAttributeProfile(
+        standard_or_rule_id="IS 4151:2015",
+        product_category="Protective Equipment & Helmets",
+        blocking_attributes=["vehicle_type"],
+        conditionally_required_attributes={"shell_size": "Required for impact drop test headform selection"},
+        optional_attributes=["has_visor", "color"],
+        clarification_priority={
+            "vehicle_type": "HIGH",
+            "shell_size": "MEDIUM",
+        },
+        applicability_dependencies=["MoRTH Protective Helmets for Two-Wheeler Riders QCO 2020"],
+        evidence_dependencies=["Accredited Impact Absorption & Retention System Dynamic Test Report"],
     ),
 }
 

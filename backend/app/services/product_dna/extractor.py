@@ -83,6 +83,20 @@ def extract_product_dna_from_text(
         if "domestic" in raw_lower or "household" in raw_lower:
             intended_use = "domestic_household"
 
+    # Toys & Children's Products
+    elif any(k in raw_lower for k in ["toy", "toys", "rattle", "plush", "doll", "puzzle", "teether"]):
+        category = "Toys & Children's Products"
+        product_name = "Children's Toy"
+        sub_category = "Play and Learning Goods"
+        intended_use = "children_play"
+
+    # Protective Equipment & Helmets
+    elif any(k in raw_lower for k in ["helmet", "helmets", "headgear"]):
+        category = "Protective Equipment & Helmets"
+        product_name = "Two-Wheeler Protective Helmet"
+        sub_category = "Rider Protective Equipment"
+        intended_use = "motorcycle_safety"
+
     # Material Extraction
     raw_materials = []
     if re.search(r"\b(grade\s*304|ss\s*304|304\s*stainless|stainless[-\s]*steel\s*304|18/8\s*(?:austenitic\s*)?stainless)\b", raw_lower):

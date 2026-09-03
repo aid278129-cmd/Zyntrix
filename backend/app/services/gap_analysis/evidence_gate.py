@@ -98,6 +98,50 @@ EVIDENCE_REQUIREMENT_MATRIX: Dict[str, EvidenceRequirementSpec] = {
         default_missing_action=RecommendedAction.UPLOAD_EVIDENCE,
         description="High-resolution packaging and product label artwork verifying BIS Standard Mark (ISI Mark) and nominal capacity.",
     ),
+    # Toys IS 9873 Cl 4.4 Small Parts
+    "REQ-TOY-CHOKE": EvidenceRequirementSpec(
+        requirement_code="REQ-TOY-CHOKE",
+        expected_evidence_types=[
+            AllowedEvidenceType.TEST_REPORT.value,
+            AllowedEvidenceType.LAB_REPORT.value,
+        ],
+        requires_physical_testing=True,
+        default_missing_action=RecommendedAction.REQUIRES_TESTING,
+        description="NABL accredited mechanical test report verifying small parts cylinder dimensions and detachment integrity.",
+    ),
+    # Toys IS 9873 Cl 4.6 Sharp Edges
+    "REQ-TOY-EDGE": EvidenceRequirementSpec(
+        requirement_code="REQ-TOY-EDGE",
+        expected_evidence_types=[
+            AllowedEvidenceType.TEST_REPORT.value,
+            AllowedEvidenceType.LAB_REPORT.value,
+        ],
+        requires_physical_testing=True,
+        default_missing_action=RecommendedAction.REQUIRES_TESTING,
+        description="Accredited laboratory sharp edge and point test report verifying zero accessible sharp edges.",
+    ),
+    # Electrical IS 302 Cl 13 Dielectric Strength
+    "REQ-ELEC-DIEL": EvidenceRequirementSpec(
+        requirement_code="REQ-ELEC-DIEL",
+        expected_evidence_types=[
+            AllowedEvidenceType.TEST_REPORT.value,
+            AllowedEvidenceType.LAB_REPORT.value,
+        ],
+        requires_physical_testing=True,
+        default_missing_action=RecommendedAction.REQUIRES_TESTING,
+        description="High voltage dielectric withstand test report (1000V/1250V AC) from accredited electrical test laboratory.",
+    ),
+    # Electrical IS 302 Cl 19 Abnormal Operation (Boil-dry)
+    "REQ-ELEC-BOILDRY": EvidenceRequirementSpec(
+        requirement_code="REQ-ELEC-BOILDRY",
+        expected_evidence_types=[
+            AllowedEvidenceType.TEST_REPORT.value,
+            AllowedEvidenceType.LAB_REPORT.value,
+        ],
+        requires_physical_testing=True,
+        default_missing_action=RecommendedAction.REQUIRES_TESTING,
+        description="Abnormal operation test report verifying automatic thermal cut-out actuation under boil-dry condition.",
+    ),
     # 5. Pending Authoritative Acquisition
     "AUTHORITATIVE_CLAUSE_PENDING": EvidenceRequirementSpec(
         requirement_code="AUTHORITATIVE_CLAUSE_PENDING",
@@ -107,7 +151,7 @@ EVIDENCE_REQUIREMENT_MATRIX: Dict[str, EvidenceRequirementSpec] = {
         ],
         requires_physical_testing=False,
         default_missing_action=RecommendedAction.EXPERT_REVIEW,
-        description="Official publication copy of IS 17526:2021 standard from Bureau of Indian Standards.",
+        description="Official publication copy of standard from Bureau of Indian Standards.",
     ),
 }
 

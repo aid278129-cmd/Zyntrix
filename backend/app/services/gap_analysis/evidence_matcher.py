@@ -14,6 +14,16 @@ CLAUSE_ATTRIBUTE_MAPPING: Dict[str, List[str]] = {
     "REQ-PERF-THERM": ["tested_heat_retention_temp"],
     "7.1": ["artwork_label_verified"],
     "REQ-MARK-ISI": ["artwork_label_verified"],
+    # Toys IS 9873
+    "4.4": ["small_parts_choke_test"],
+    "REQ-TOY-CHOKE": ["small_parts_choke_test"],
+    "4.6": ["sharp_edges_test"],
+    "REQ-TOY-EDGE": ["sharp_edges_test"],
+    # Electrical IS 302
+    "13.1": ["dielectric_strength_test"],
+    "REQ-ELEC-DIEL": ["dielectric_strength_test"],
+    "19.4": ["boil_dry_cutoff_test"],
+    "REQ-ELEC-BOILDRY": ["boil_dry_cutoff_test"],
 }
 
 
@@ -141,6 +151,50 @@ def match_evidence_to_requirements(
             else:
                 rule_res = "FAIL"
                 rule_exp = "Submitted packaging artwork lacks mandatory ISI Standard Mark details."
+
+        # 5. Toys Small Parts Choking Rule (Clause 4.4 IS 9873)
+        elif req_code == "REQ-TOY-CHOKE" or "small part" in desc or "cylinder" in cond_lower:
+            all_passed = all(ev.normalized_value == 1.0 for ev in matched_evs)
+            if all_passed:
+                top_ev = matched_evs[0]
+                rule_res = "PASS"
+                rule_exp = f"Accredited Toy Safety Report [{top_ev.evidence_id}] confirms zero detachable small parts fitting cylinder (Clause 4.4 PASS)."
+            else:
+                rule_res = "FAIL"
+                rule_exp = "Toy test report indicates small parts detachment or choking hazard under Clause 4.4."
+
+        # 6. Toys Sharp Edges Rule (Clause 4.6 IS 9873)
+        elif req_code == "REQ-TOY-EDGE" or "sharp" in desc:
+            all_passed = all(ev.normalized_value == 1.0 for ev in matched_evs)
+            if all_passed:
+                top_ev = matched_evs[0]
+                rule_res = "PASS"
+                rule_exp = f"Mechanical Safety Report [{top_ev.evidence_id}] confirms zero sharp edges or points (Clause 4.6/4.7 PASS)."
+            else:
+                rule_res = "FAIL"
+                rule_exp = "Test report indicates accessible sharp edges or points cutting PTFE tape."
+
+        # 7. Electrical Dielectric Insulation (Clause 13 IS 302)
+        elif req_code == "REQ-ELEC-DIEL" or "dielectric" in desc:
+            all_passed = all(ev.normalized_value == 1.0 for ev in matched_evs)
+            if all_passed:
+                top_ev = matched_evs[0]
+                rule_res = "PASS"
+                rule_exp = f"Electrical Safety Report [{top_ev.evidence_id}] confirms high voltage dielectric withstand with no breakdown (Clause 13)."
+            else:
+                rule_res = "FAIL"
+                rule_exp = "High voltage dielectric breakdown test failed or insulation flashover observed."
+
+        # 8. Electrical Boil-Dry Cutout (Clause 19 IS 302)
+        elif req_code == "REQ-ELEC-BOILDRY" or "boil" in desc or "abnormal" in desc:
+            all_passed = all(ev.normalized_value == 1.0 for ev in matched_evs)
+            if all_passed:
+                top_ev = matched_evs[0]
+                rule_res = "PASS"
+                rule_exp = f"Abnormal Operation Report [{top_ev.evidence_id}] confirms thermal cut-out operated under boil-dry condition (Clause 19)."
+            else:
+                rule_res = "FAIL"
+                rule_exp = "Boil-dry abnormal operation test failed to actuate thermal cut-out."
 
         rule_results[req_id] = (rule_res, rule_exp)
 

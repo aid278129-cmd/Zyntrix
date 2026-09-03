@@ -752,6 +752,23 @@ export function AssessmentWorkspace() {
                         </div>
                       </div>
 
+                      {/* 7-Stage MSME Decision Progression Chain */}
+                      <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-slate-400 bg-slate-900/60 p-2 rounded border border-slate-800/60">
+                        <span className="text-slate-300 font-bold">PRODUCT FACT</span>
+                        <span className="text-slate-600">&rarr;</span>
+                        <span className="text-blue-400 font-bold">APPLICABILITY</span>
+                        <span className="text-slate-600">&rarr;</span>
+                        <span className="text-indigo-300 font-bold">REQUIREMENT ({ev.requirement_code})</span>
+                        <span className="text-slate-600">&rarr;</span>
+                        <span className="text-amber-400 font-bold">REQUIRED EVIDENCE ({(ev.required_evidence_types || ['LAB_REPORT'])[0]})</span>
+                        <span className="text-slate-600">&rarr;</span>
+                        <span className="text-emerald-400 font-bold">CURRENT ({ev.evidence_ids && ev.evidence_ids.length > 0 ? ev.evidence_ids[0] : 'MISSING'})</span>
+                        <span className="text-slate-600">&rarr;</span>
+                        <span className="text-purple-400 font-bold">GAP ({isSatisfied ? '0' : 'ACTIVE'})</span>
+                        <span className="text-slate-600">&rarr;</span>
+                        <span className="text-rose-400 font-bold">ACTION ({ev.recommended_action || 'PASS'})</span>
+                      </div>
+
                       {/* Evidence Traceability Row */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
                         <div className="p-2.5 rounded bg-slate-900/80 border border-slate-800">
