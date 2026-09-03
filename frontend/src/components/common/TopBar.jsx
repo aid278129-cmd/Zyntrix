@@ -13,11 +13,9 @@ export function TopBar({
 }) {
   const navItems = [
     { id: 'overview', label: 'Overview' },
-    { id: 'analyze', label: 'Product Input' },
-    { id: 'workspace', label: 'Product DNA' },
+    { id: 'analyze', label: 'Product Input & Specs' },
     { id: 'standards', label: 'Standards & Gaps' },
     { id: 'assistant', label: 'Copilot' },
-    { id: 'passport', label: 'Passport' },
     { id: 'knowledge', label: 'BIS Catalog' },
   ];
 

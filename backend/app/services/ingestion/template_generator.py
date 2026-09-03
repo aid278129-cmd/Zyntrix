@@ -267,5 +267,202 @@ class TemplateGeneratorService:
         writer.writerow(["LP-05", "Neon Indicator Lamp", "Glass / Series Resistor", "230V AC", "1"])
         return output.getvalue()
 
+    @classmethod
+    def generate_sample_product_info_pdf(cls, target_standard: Optional[str] = None, category: Optional[str] = None) -> bytes:
+        """Generate a production-grade sample Product Information Specification PDF.
+        
+        Shows manufacturers how a complete, compliant technical specification PDF
+        should be structured for high-accuracy PyMuPDF extraction and automated Product DNA compilation.
+        """
+        import pymupdf
+
+        doc = pymupdf.open()
+
+        # -------------------------------------------------------------
+        # PAGE 1: Product Identification, Dimensions, & Material Specifications
+        # -------------------------------------------------------------
+        page1 = doc.new_page(width=595, height=842)  # A4 size
+
+        # Top decorative accent header
+        page1.draw_rect(pymupdf.Rect(40, 35, 555, 38), color=(0.25, 0.35, 0.85), fill=(0.25, 0.35, 0.85))
+
+        page1.insert_text(
+            (40, 58),
+            "ZYNTRIX BIS COMPLIANCE COMPILER • REFERENCE SPECIFICATION GUIDE",
+            fontsize=9,
+            fontname="helv",
+            color=(0.4, 0.45, 0.55),
+        )
+        page1.insert_text(
+            (40, 80),
+            "PRODUCT INFORMATION & SPECIFICATION SHEET",
+            fontsize=16,
+            fontname="hebo",
+            color=(0.1, 0.15, 0.3),
+        )
+        page1.insert_text(
+            (40, 96),
+            "Reference Model Document for Automated Pre-Certification & Ingestion (IS 17526:2021)",
+            fontsize=10,
+            fontname="helv",
+            color=(0.3, 0.35, 0.45),
+        )
+
+        # Guidance Notice Box
+        page1.draw_rect(pymupdf.Rect(40, 110, 555, 148), color=(0.85, 0.88, 0.95), fill=(0.95, 0.97, 1.0))
+        page1.insert_text(
+            (50, 126),
+            "PREPARATION INSTRUCTIONS FOR MANUFACTURERS / APPLICANTS:",
+            fontsize=9,
+            fontname="hebo",
+            color=(0.15, 0.25, 0.6),
+        )
+        page1.insert_text(
+            (50, 140),
+            "Upload your technical specification sheet in PDF format. Ensure all sections below are explicitly declared",
+            fontsize=8.5,
+            fontname="helv",
+            color=(0.25, 0.3, 0.4),
+        )
+
+        # Section 1: Identification
+        page1.draw_line((40, 165), (555, 165), color=(0.8, 0.85, 0.9))
+        page1.insert_text((40, 180), "1. PRODUCT & MANUFACTURER IDENTIFICATION", fontsize=11, fontname="hebo", color=(0.1, 0.15, 0.3))
+
+        ident_lines = [
+            ("Product Commercial Name:", "Apex ThermoShield Stainless Steel Vacuum Flask"),
+            ("Model Number / Code:", "TS-750-SS (Series: Classic Hydration)"),
+            ("Manufacturer / Brand Owner:", "Apex Thermalware India Private Limited"),
+            ("Manufacturing Facility Address:", "Plot No. 42, Sector 8, Industrial Estate, IMT Manesar, Haryana 122050"),
+            ("Applicable Indian Standard:", "IS 17526:2021 (Domestic Stainless Steel Vacuum Flasks / Insulated Containers)"),
+            ("Statutory Regulatory Basis:", "DPIIT Cookware, Utensils and Insulated Containers (Quality Control) Order, 2023"),
+            ("Target BIS Certification Scheme:", "Scheme-I (ISI Mark Standard Product Conformance Scheme)"),
+        ]
+        y = 198
+        for lbl, val in ident_lines:
+            page1.insert_text((45, y), lbl, fontsize=8.5, fontname="hebo", color=(0.2, 0.25, 0.35))
+            page1.insert_text((220, y), val, fontsize=8.5, fontname="helv", color=(0.05, 0.05, 0.1))
+            y += 16
+
+        # Section 2: Technical & Physical Specifications
+        page1.draw_line((40, y + 4), (555, y + 4), color=(0.8, 0.85, 0.9))
+        y += 20
+        page1.insert_text((40, y), "2. TECHNICAL & PHYSICAL RATINGS (IS 17526:2021)", fontsize=11, fontname="hebo", color=(0.1, 0.15, 0.3))
+        y += 18
+
+        tech_lines = [
+            ("Nominal Volume / Capacity:", "750 ml (Tolerance: +/- 25 ml)"),
+            ("Flask Configuration Type:", "Type I - Narrow Neck Double-Walled Vacuum Insulated Container"),
+            ("Operating Medium Compatibility:", "Potable Drinking Water, Tea, Coffee (Hot & Cold Beverages)"),
+            ("Tare Net Dry Weight:", "385 grams (+/- 10g)"),
+            ("Overall Physical Dimensions:", "Height: 270 mm | Base Outer Diameter: 76 mm | Neck Mouth ID: 36 mm"),
+            ("Thermal Insulation Mechanism:", "Double-Walled Cryogenic Vacuum Barrier (< 10^-4 mbar evacuation)"),
+        ]
+        for lbl, val in tech_lines:
+            page1.insert_text((45, y), lbl, fontsize=8.5, fontname="hebo", color=(0.2, 0.25, 0.35))
+            page1.insert_text((220, y), val, fontsize=8.5, fontname="helv", color=(0.05, 0.05, 0.1))
+            y += 16
+
+        # Section 3: Material Formulation & BOM
+        page1.draw_line((40, y + 4), (555, y + 4), color=(0.8, 0.85, 0.9))
+        y += 20
+        page1.insert_text((40, y), "3. MATERIAL FORMULATION & BILL OF MATERIALS (BOM)", fontsize=11, fontname="hebo", color=(0.1, 0.15, 0.3))
+        y += 18
+
+        mat_lines = [
+            ("Inner Body Liner (Food Contact):", "Austenitic Stainless Steel Grade 304 conforming to IS 6911 (Cr 18%, Ni 8%)"),
+            ("Outer Protective Body Casing:", "Stainless Steel Grade 304 (Powder Coated External Finish)"),
+            ("Stopper Core / Thread Mechanism:", "100% Virgin Food-Grade Polypropylene (PP), Bisphenol-A (BPA) Free"),
+            ("Sealing Gasket Ring:", "Food-Grade Vulcanized Silicone Rubber (Resistant from -20 C to +120 C)"),
+            ("Carrying Loop / Strap Material:", "Woven Polypropylene Webbing with 150 N Tensile Strength"),
+        ]
+        for lbl, val in mat_lines:
+            page1.insert_text((45, y), lbl, fontsize=8.5, fontname="hebo", color=(0.2, 0.25, 0.35))
+            page1.insert_text((220, y), val, fontsize=8.5, fontname="helv", color=(0.05, 0.05, 0.1))
+            y += 16
+
+        # Footer Page 1
+        page1.draw_line((40, 800), (555, 800), color=(0.85, 0.88, 0.92))
+        page1.insert_text((40, 815), "Zyntrix Compliance Platform • Document Specification Guide v1.0", fontsize=8, fontname="helv", color=(0.5, 0.55, 0.6))
+        page1.insert_text((505, 815), "Page 1 of 2", fontsize=8, fontname="helv", color=(0.5, 0.55, 0.6))
+
+        # -------------------------------------------------------------
+        # PAGE 2: Performance Testing, Markings, & Evidence Attachment
+        # -------------------------------------------------------------
+        page2 = doc.new_page(width=595, height=842)
+
+        page2.draw_rect(pymupdf.Rect(40, 35, 555, 38), color=(0.25, 0.35, 0.85), fill=(0.25, 0.35, 0.85))
+        page2.insert_text((40, 58), "ZYNTRIX BIS COMPLIANCE COMPILER • REFERENCE SPECIFICATION GUIDE", fontsize=9, fontname="helv", color=(0.4, 0.45, 0.55))
+        page2.insert_text((40, 80), "PERFORMANCE PARAMETERS & REQUIRED TEST EVIDENCE", fontsize=14, fontname="hebo", color=(0.1, 0.15, 0.3))
+
+        # Section 4: Testing & Laboratory Performance
+        page2.draw_line((40, 95), (555, 95), color=(0.8, 0.85, 0.9))
+        y2 = 112
+        page2.insert_text((40, y2), "4. TEST BENCHMARK REQUIREMENTS & VERIFIED THRESHOLDS", fontsize=11, fontname="hebo", color=(0.1, 0.15, 0.3))
+        y2 += 18
+
+        tests = [
+            ("Thermal Retention (Clause 5.4):", "Filled with boiling water at 95 C. Maintained >= 65.5 C after 6h (Min Req: 60.0 C)"),
+            ("Inversion Leakage Test (Clause 5.2):", "Inverted 180 degrees under full load for 10 minutes. Zero liquid drops observed."),
+            ("Handle & Stopper Pull Strength:", "Sustained 15 kg static load for 5 minutes without deformation or loosening."),
+            ("Drop & Impact Resistance (Clause 5.7):", "1.2 meter drop onto hardened concrete surface. No vacuum puncture or fracture."),
+            ("Corrosion Resistance (Clause 5.3):", "48-hour neutral salt spray test (NSS). No rust, pitting, or discoloration."),
+        ]
+        for lbl, val in tests:
+            page2.insert_text((45, y2), lbl, fontsize=8.5, fontname="hebo", color=(0.2, 0.25, 0.35))
+            page2.insert_text((220, y2), val, fontsize=8.5, fontname="helv", color=(0.05, 0.05, 0.1))
+            y2 += 18
+
+        # Section 5: Statutory Product Markings
+        page2.draw_line((40, y2 + 4), (555, y2 + 4), color=(0.8, 0.85, 0.9))
+        y2 += 22
+        page2.insert_text((40, y2), "5. STATUTORY MARKINGS & LABELING DECLARATION (Clause 7)", fontsize=11, fontname="hebo", color=(0.1, 0.15, 0.3))
+        y2 += 18
+
+        markings = [
+            ("Manufacturer Trade Name / Mark:", "Permanently stamped / laser engraved on bottom base."),
+            ("Nominal Volume Declaration:", "'750 ml' clearly legible on external retail carton and flask body."),
+            ("Country of Origin Declaration:", "'Made in India' conspicuously embossed on container."),
+            ("Batch / Manufacturing Lot No.:", "LOT-AS-2026-09 with year and month of manufacture."),
+            ("BIS Standard Mark Placement:", "Reserved standard mark space for Scheme-I ISI Mark with CM/L License Number."),
+        ]
+        for lbl, val in markings:
+            page2.insert_text((45, y2), lbl, fontsize=8.5, fontname="hebo", color=(0.2, 0.25, 0.35))
+            page2.insert_text((220, y2), val, fontsize=8.5, fontname="helv", color=(0.05, 0.05, 0.1))
+            y2 += 18
+
+        # Section 6: Evidence Attachments Required
+        page2.draw_line((40, y2 + 4), (555, y2 + 4), color=(0.8, 0.85, 0.9))
+        y2 += 22
+        page2.insert_text((40, y2), "6. COMPLIANCE EVIDENCE ATTACHMENT CHECKLIST", fontsize=11, fontname="hebo", color=(0.1, 0.15, 0.3))
+        y2 += 18
+
+        docs = [
+            ("[x] Mill Test Certificate (MTC):", "Proving chemical composition of SS 304 raw coil (Cr/Ni ratio) from mill."),
+            ("[x] NABL Laboratory Test Report:", "Complete test report for Thermal Retention (Cl 5.4) and Leakage (Cl 5.2)."),
+            ("[x] Product Artwork & Labeling Proof:", "Dimensional diagram showing ISI mark positioning and consumer warnings."),
+            ("[x] Manufacturing Quality Plan (MQP):", "Factory testing protocols for routine in-process vacuum seal verification."),
+        ]
+        for lbl, val in docs:
+            page2.insert_text((45, y2), lbl, fontsize=8.5, fontname="hebo", color=(0.15, 0.3, 0.5))
+            page2.insert_text((220, y2), val, fontsize=8.5, fontname="helv", color=(0.05, 0.05, 0.1))
+            y2 += 18
+
+        # Sign-off box
+        page2.draw_rect(pymupdf.Rect(40, y2 + 10, 555, y2 + 80), color=(0.8, 0.85, 0.9), fill=(0.97, 0.98, 1.0))
+        page2.insert_text((55, y2 + 28), "AUTHORIZED SIGNATORY / TECHNICAL HEAD DECLARATION:", fontsize=8.5, fontname="hebo", color=(0.1, 0.15, 0.3))
+        page2.insert_text((55, y2 + 44), "I hereby certify that the above technical specifications represent true physical dimensions, material grades,", fontsize=8, fontname="helv", color=(0.3, 0.35, 0.45))
+        page2.insert_text((55, y2 + 56), "and testing performance of the product submitted for Bureau of Indian Standards pre-certification evaluation.", fontsize=8, fontname="helv", color=(0.3, 0.35, 0.45))
+        page2.insert_text((55, y2 + 70), "Signatory Name: Rajesh Sharma, VP Engineering & Quality Assurance | Date: 2026-09-03", fontsize=8, fontname="hebo", color=(0.15, 0.25, 0.4))
+
+        # Footer Page 2
+        page2.draw_line((40, 800), (555, 800), color=(0.85, 0.88, 0.92))
+        page2.insert_text((40, 815), "Zyntrix Compliance Platform • Document Specification Guide v1.0", fontsize=8, fontname="helv", color=(0.5, 0.55, 0.6))
+        page2.insert_text((505, 815), "Page 2 of 2", fontsize=8, fontname="helv", color=(0.5, 0.55, 0.6))
+
+        pdf_bytes = doc.tobytes()
+        doc.close()
+        return pdf_bytes
+
 
 template_generator_service = TemplateGeneratorService()

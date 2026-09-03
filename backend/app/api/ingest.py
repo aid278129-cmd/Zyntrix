@@ -50,14 +50,21 @@ async def get_required_information(
     )
 
 
-@router.get("/ingest/template", summary="Generate fillable specification or BOM template")
+@router.get("/ingest/template", summary="Generate fillable specification, BOM, or sample product PDF template")
 async def generate_template(
-    template_type: str = Query("spec_csv", description="spec_csv | bom_csv | spec_json"),
+    template_type: str = Query("spec_csv", description="spec_csv | bom_csv | spec_json | sample_pdf"),
     target_standard: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
 ):
     """Generates clean, fillable/downloadable template containing verified required fields."""
-    if template_type == "bom_csv":
+    if template_type in ("sample_pdf", "spec_pdf"):
+        pdf_bytes = template_generator_service.generate_sample_product_info_pdf(target_standard, category)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": 'attachment; filename="sample_product_information_specification.pdf"'},
+        )
+    elif template_type == "bom_csv":
         content = template_generator_service.generate_bom_csv_template()
         return Response(
             content=content,
@@ -74,6 +81,20 @@ async def generate_template(
             media_type="text/csv",
             headers={"Content-Disposition": 'attachment; filename="zyntrix_spec_template.csv"'},
         )
+
+
+@router.get("/ingest/sample-product-pdf", summary="Download reference sample Product Information PDF")
+async def get_sample_product_pdf(
+    target_standard: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
+):
+    """Download a publication-grade sample Product Information Specification PDF illustrating proper format."""
+    pdf_bytes = template_generator_service.generate_sample_product_info_pdf(target_standard, category)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="sample_product_information_specification.pdf"'},
+    )
 
 
 @router.post("/ingest/validate", response_model=DocumentValidationResult, summary="Pre-flight validation for uploaded documents")

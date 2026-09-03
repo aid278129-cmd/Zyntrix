@@ -33,6 +33,7 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
 
   // BOM text state
   const [bomText, setBomText] = useState('');
+  const bomFileInputRef = useRef(null);
 
   const quickCategories = [
     'Kitchen & Domestic Appliances',
@@ -354,12 +355,13 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
   };
 
   // BOM Parser Handler
-  const handleParseBOM = async () => {
-    if (!bomText.trim()) return;
+  const handleParseBOM = async (contentOverride = null) => {
+    const rawContent = typeof contentOverride === 'string' ? contentOverride : bomText;
+    if (!rawContent.trim()) return;
     setValidationIssues([]);
 
     // Check for unfilled placeholder tokens
-    if (/\[FILL_HERE\]|TODO|REQUIRED_VALUE/i.test(bomText)) {
+    if (/\[FILL_HERE\]|TODO|REQUIRED_VALUE/i.test(rawContent)) {
       setValidationIssues([
         {
           code: 'INCOMPLETE_TEMPLATE_PLACEHOLDERS',
@@ -373,7 +375,7 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
     setExtractedNotice('Layer 1 BOM Ingestion: Multi-component tabular parser with asynchronous chunking...');
     try {
       const formData = new FormData();
-      formData.append('raw_content', bomText);
+      formData.append('raw_content', rawContent);
       const res = await fetch('/api/v1/ingest/bom', {
         method: 'POST',
         body: formData,
@@ -381,7 +383,7 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
       if (res.ok) {
         const data = await res.json();
         setExtractedNotice(`BOM Ingestion Complete: ${data.summary}`);
-        if (!productName) setProductName('Electric Immersion Water Heater (From BOM)');
+        if (!productName) setProductName('Product Assembly (From BOM)');
         
         const compLines = data.components.map((c) => `• ${c.name} (${c.material}) - ${c.specification} [Qty: ${c.quantity}]`).join('\n');
         const ratingsStr = Object.entries(data.electrical_ratings).map(([k, v]) => `${k}: ${v}`).join(', ');
@@ -401,6 +403,21 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
     } finally {
       setIsParsingFile(false);
     }
+  };
+
+  const handleBOMCSVUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result;
+      if (typeof content === 'string') {
+        setBomText(content);
+        setUploadedFileName(file.name);
+        handleParseBOM(content);
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleLoadSampleBOM = () => {
@@ -832,6 +849,21 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    ref={bomFileInputRef}
+                    onChange={handleBOMCSVUpload}
+                    accept=".csv,text/csv"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => bomFileInputRef.current?.click()}
+                    className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">upload_file</span>
+                    Upload CSV File
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleDownloadTemplate('bom_csv')}
@@ -1048,6 +1080,23 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
               </p>
 
               <div className="space-y-2">
+                <div
+                  onClick={() => handleDownloadTemplate('sample_pdf')}
+                  className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-100/60 cursor-pointer transition flex items-center justify-between shadow-2xs"
+                >
+                  <div>
+                    <div className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-indigo-600 text-[18px]">picture_as_pdf</span>
+                      Sample Product Information Specification (.PDF)
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-600 text-white">RECOMMENDED</span>
+                    </div>
+                    <div className="text-[11px] text-indigo-700/80 mt-0.5">
+                      Reference visual guide showing exact layout, technical ratings, material grades & test data for automated extraction
+                    </div>
+                  </div>
+                  <span className="material-symbols-outlined text-indigo-600 text-[20px]">download</span>
+                </div>
+
                 <div
                   onClick={() => handleDownloadTemplate('spec_csv')}
                   className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 cursor-pointer transition flex items-center justify-between"

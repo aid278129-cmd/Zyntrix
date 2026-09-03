@@ -3,14 +3,10 @@ import React from 'react';
 export function SideNav({ currentView, onNavigate, onNewAnalysis, assessmentsCount = 0, standardsCount = 51 }) {
   const navItems = [
     { id: 'overview', step: '01', label: 'Compliance Overview', icon: 'dashboard' },
-    { id: 'analyze', step: '02', label: 'Product Input', icon: 'analytics' },
-    { id: 'workspace', step: '03', label: 'Product DNA', icon: 'fingerprint' },
-    { id: 'standards', step: '04', label: 'BIS Standards & Gaps', icon: 'gavel' },
-    { id: 'assistant', step: '05', label: 'Compliance Copilot', icon: 'smart_toy' },
-    { id: 'passport', step: '06', label: 'Compliance Passport', icon: 'verified_user' },
-    { id: 'knowledge', step: '07', label: 'BIS Standards Catalog', icon: 'menu_book' },
-    { id: 'evaluation', step: '08', label: 'Evaluation Console (M5)', icon: 'bar_chart' },
-    { id: 'diagnostics', step: '09', label: 'Architecture & Health', icon: 'memory' },
+    { id: 'analyze', step: '02', label: 'Product Input & Specs', icon: 'analytics' },
+    { id: 'standards', step: '03', label: 'BIS Standards & Gaps', icon: 'gavel' },
+    { id: 'assistant', step: '04', label: 'Compliance Copilot', icon: 'smart_toy' },
+    { id: 'knowledge', step: '05', label: 'BIS Standards Catalog', icon: 'menu_book' },
   ];
 
   return (

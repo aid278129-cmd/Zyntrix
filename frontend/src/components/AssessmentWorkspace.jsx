@@ -40,7 +40,6 @@ export function AssessmentWorkspace() {
   const [selectedAssessmentId, setSelectedAssessmentId] = useState(null);
   const [assessment, setAssessment] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isJudgeMode, setIsJudgeMode] = useState(false);
   const [activeSection, setActiveSection] = useState('overview'); // overview | dna | applicability | requirements | evidence | evaluation | roadmap | graph | passport | history
   const [passportData, setPassportData] = useState(null);
   const [snapshots, setSnapshots] = useState([]);
@@ -430,20 +429,8 @@ export function AssessmentWorkspace() {
                 </span>
 
                 <button
-                  onClick={() => setIsJudgeMode(!isJudgeMode)}
-                  className={`px-3 py-1 rounded text-xs font-bold transition flex items-center gap-1.5 border ${
-                    isJudgeMode
-                      ? 'bg-amber-950 text-amber-300 border-amber-800'
-                      : 'bg-slate-50 text-slate-500 border-slate-200 hover:text-white'
-                  }`}
-                >
-                  <Scale className="w-3.5 h-3.5" />
-                  {isJudgeMode ? 'Judge Mode: ACTIVE' : 'Enable Judge Mode'}
-                </button>
-
-                <button
                   onClick={handleLoadPassport}
-                  className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs text-xs font-bold transition flex items-center gap-1.5"
+                  className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <Award className="w-3.5 h-3.5" />
                   Compliance Passport
