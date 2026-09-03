@@ -246,7 +246,7 @@ def can_be_satisfied(
             continue
 
         verif_status = ev_dict.get("verification_status", "UNVERIFIED")
-        if verif_status in ("REJECTED", "INVALID"):
+        if verif_status != "VERIFIED":
             continue
 
         valid_linked.append(ev_dict)

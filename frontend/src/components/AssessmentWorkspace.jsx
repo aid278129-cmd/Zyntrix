@@ -472,6 +472,30 @@ export function AssessmentWorkspace() {
               </div>
             )}
 
+            {/* Active Clarification Questions Banner */}
+            {assessment.clarifications && assessment.clarifications.length > 0 && (
+              <div className="p-4 rounded-lg bg-amber-950/40 border border-amber-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-200">
+                <div className="flex items-start gap-3">
+                  <HelpCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <strong className="text-amber-300 font-bold block text-sm">
+                      CLARIFICATION REQUIRED ({assessment.clarifications.length} Missing Product Fact{assessment.clarifications.length > 1 ? 's' : ''})
+                    </strong>
+                    <p className="leading-relaxed text-[11px]">
+                      Essential attributes ({assessment.clarifications.map(c => `'${c.attribute_name}'`).join(', ')}) are unstated.
+                      The system refuses to guess missing specifications.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveSection('dna')}
+                  className="px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold transition shrink-0 text-xs"
+                >
+                  Answer Questions
+                </button>
+              </div>
+            )}
+
             {/* Navigation Stepper (8-Step Workflow) */}
             <div className="flex border-b border-slate-800 gap-1 overflow-x-auto pt-2 pb-px text-xs font-semibold">
               {[

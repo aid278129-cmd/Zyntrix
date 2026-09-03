@@ -666,6 +666,43 @@ class AssessmentService:
         evals = comp.get("evaluations", [])
         dna = assessment.product_dna_snapshot or {}
 
+        # Security & Zero-Hallucination Guard: Reject prompt injections and compliance override attempts
+        if any(w in q_lower for w in ["ignore previous", "override", "certify compliant", "mark compliant", "declare compliant", "bypass gate"]):
+            return {
+                "answer": "The AI assistant has ZERO authority to declare, override, or certify compliance. All compliance determinations are strictly computed by the deterministic compliance gate (can_be_satisfied) based on verified laboratory evidence.",
+                "assessment_id": assessment.id,
+                "context_used": {"authority": "DETERMINISTIC_GATE_ONLY"},
+                "citations": [{"source": "Zero-Hallucination Regulatory Integrity Policy"}],
+            }
+
+        # Check for ungrounded / fake standards
+        import re
+        fake_std_match = re.search(r"\bis\s*(\d{4,6})\b", q_lower)
+        if fake_std_match:
+            asked_std = f"IS {fake_std_match.group(1)}"
+            app_stds = [str(a.get("standard_number", "")) for a in (assessment.applicability_snapshot or [])]
+            cur_std = comp.get("standard_number", "IS 17526:2021")
+            if not any(asked_std in s for s in app_stds + [cur_std]):
+                return {
+                    "answer": f"Standard '{asked_std}' is not an applicable standard for this product assessment. The system strictly refuses to invent ungrounded requirements or speculate on unverified standards.",
+                    "assessment_id": assessment.id,
+                    "context_used": {"verified_standards": [cur_std] + app_stds},
+                    "citations": [{"source": "BIS Official Knowledge Catalog"}],
+                }
+
+        # Check for ungrounded / fake clauses
+        fake_clause_match = re.search(r"\bclause\s*(\d+(\.\d+)+)\b", q_lower)
+        if fake_clause_match:
+            asked_clause = fake_clause_match.group(1)
+            known_clauses = [str(e.get("clause_number")) for e in evals if e.get("clause_number")]
+            if known_clauses and asked_clause not in known_clauses:
+                return {
+                    "answer": f"Clause {asked_clause} does not exist in the codified requirements for {comp.get('standard_number', 'IS 17526:2021')}. The system will not invent ungrounded clauses.",
+                    "assessment_id": assessment.id,
+                    "context_used": {"known_clauses": known_clauses},
+                    "citations": [{"source": "BIS Official Knowledge Catalog"}],
+                }
+
         # Search matching clause or requirement
         matched_eval = None
         for ev in evals:

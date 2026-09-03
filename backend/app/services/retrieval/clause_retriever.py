@@ -61,7 +61,7 @@ async def search_clauses(
     verified_only: bool = True,
     include_unverified: bool = False,
     top_k: int = 5,
-    min_score: float = 0.05,
+    min_score: float = 0.15,
     retrieval_mode: str = "HYBRID",  # HYBRID | DENSE | LEXICAL
     alpha: float = 0.5,             # Weight for lexical
     beta: float = 0.5,              # Weight for dense
@@ -105,9 +105,14 @@ async def search_clauses(
             clauses = []
 
     if not clauses:
-        clauses = _get_fallback_seed_clauses()
+        fallback = _get_fallback_seed_clauses()
         if standard_number:
-            clauses = [c for c in clauses if c.standard.standard_number == standard_number]
+            clauses = [c for c in fallback if c.standard and c.standard.standard_number == standard_number]
+            if not clauses:
+                # Specified standard does not exist in verified catalog - do NOT invent or return other standards
+                return []
+        else:
+            clauses = fallback
 
     # Map clauses by ID
     clause_map = {c.id: c for c in clauses}
@@ -151,7 +156,7 @@ async def search_clauses(
         else:
             comb_score = (alpha * l_val) + (beta * d_val)
 
-        if comb_score >= min_score or retrieval_mode != "HYBRID":
+        if comb_score >= min_score:
             # Formulate match factors
             match_factors = {
                 "exact_standard_match": standard_number == (c.standard.standard_number if c.standard else None),
