@@ -27,6 +27,11 @@ class DeterministicLocalEmbeddingProvider(EmbeddingProvider):
 
     def __init__(self, dimension: int = 384):
         super().__init__(dimension=dimension)
+        self.model_name = "deterministic-384-local"
+
+    def embed_query(self, text: str) -> List[float]:
+        """Alias for embed_text matching standard retrieval interfaces."""
+        return self.embed_text(text)
 
     def embed_text(self, text: str) -> List[float]:
         clean_text = text.lower().strip()
