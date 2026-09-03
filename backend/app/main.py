@@ -67,8 +67,10 @@ app.add_middleware(
 # Root-level health checks (/health, /health/db, /health/vector)
 app.include_router(health_router)
 
-# Versioned API routes (/api/v1/...)
+# Versioned API routes (/api/v1/... and /api/...)
 app.include_router(api_router, prefix=settings.API_V1_STR)
+if settings.API_V1_STR != "/api":
+    app.include_router(api_router, prefix="/api")
 
 
 @app.get("/", tags=["Root"])

@@ -73,8 +73,8 @@ TAXONOMY_REGISTRY: Dict[str, ProductCategoryDefinition] = {
             "toaster", "electric iron", "immersion heater"
         ],
         distinguishing_attributes=["electrical", "voltage", "wattage", "product_name"],
-        supported_rules=["APP-ELECTRICAL-001"],
-        supported_standards=["IS 302-2-15:2009"],
+        supported_rules=["APP-ELECTRICAL-001", "APP-ELECTRICAL-002"],
+        supported_standards=["IS 302-2-15:2009", "IS 302-2-201:2008"],
         coverage_state="COVERED",
     ),
     "CAT-TOYS": ProductCategoryDefinition(
@@ -143,6 +143,19 @@ REQUIRED_ATTRIBUTE_PROFILES: Dict[str, RequiredAttributeProfile] = {
         },
         applicability_dependencies=["Electrical Appliances for Domestic Use QCO"],
         evidence_dependencies=["IS 302-1 Electrical Safety Test Report"],
+    ),
+    "IS 302-2-201:2008": RequiredAttributeProfile(
+        standard_or_rule_id="IS 302-2-201:2008",
+        product_category="Electrical & Domestic Appliances",
+        blocking_attributes=["electrical", "voltage"],
+        conditionally_required_attributes={"wattage": "Required for immersion heating element endurance check"},
+        optional_attributes=["intended_use"],
+        clarification_priority={
+            "voltage": "HIGH",
+            "wattage": "MEDIUM",
+        },
+        applicability_dependencies=["Electrical Appliances (Quality Control) Order, 2003 (S.O. 189(E))"],
+        evidence_dependencies=["IS 302-1 / IS 302-2-201 Electrical Safety Test Report"],
     ),
     "IS 9873 (Part 1):2019": RequiredAttributeProfile(
         standard_or_rule_id="IS 9873 (Part 1):2019",

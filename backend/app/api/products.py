@@ -61,8 +61,20 @@ class ProductAnalyzeResponse(BaseModel):
     evaluation_mode: str = "DEVELOPMENT_MODE"  # AUTHORITATIVE_MODE | DEVELOPMENT_MODE
 
 
+
+class ConfirmFactRequest(BaseModel):
+    fact_id: str
+
+
+class CorrectFactRequest(BaseModel):
+    fact_id: str
+    new_value: Any
+    reason: Optional[str] = "User specification correction"
+
+
 # In-memory session store for interactive Product DNA workspace
 _PRODUCT_WORKSPACE_STORE: Dict[str, Dict[str, Any]] = {}
+
 
 
 @router.post(
@@ -335,6 +347,51 @@ async def get_product_dna(product_id: str):
     if product_id not in _PRODUCT_WORKSPACE_STORE:
         raise HTTPException(status_code=404, detail="Product not found")
     return _PRODUCT_WORKSPACE_STORE[product_id]["dna"]
+
+
+@router.post("/{product_id}/dna/confirm-fact", summary="Confirm extracted fact")
+async def confirm_product_fact(product_id: str, req: ConfirmFactRequest):
+    if product_id not in _PRODUCT_WORKSPACE_STORE:
+        raise HTTPException(status_code=404, detail="Product not found")
+    dna = _PRODUCT_WORKSPACE_STORE[product_id]["dna"]
+    for f in dna.facts:
+        if f.fact_id == req.fact_id:
+            from backend.app.schemas.product_dna import FactVerificationState
+            f.verification_state = FactVerificationState.CONFIRMED
+            break
+    return {"status": "SUCCESS", "fact_id": req.fact_id, "state": "CONFIRMED", "dna": dna}
+
+
+@router.post("/{product_id}/dna/correct-fact", summary="Correct extracted fact with audit history")
+async def correct_product_fact(product_id: str, req: CorrectFactRequest):
+    if product_id not in _PRODUCT_WORKSPACE_STORE:
+        raise HTTPException(status_code=404, detail="Product not found")
+    from datetime import datetime
+    from backend.app.schemas.product_dna import FactVerificationState, FactProvenanceType, FactAuditEntry
+    dna = _PRODUCT_WORKSPACE_STORE[product_id]["dna"]
+    for f in dna.facts:
+        if f.fact_id == req.fact_id:
+            audit = FactAuditEntry(
+                timestamp=datetime.utcnow(),
+                old_value=f.value,
+                new_value=req.new_value,
+                reason=req.reason or "User correction",
+                updated_by="user",
+            )
+            f.history.append(audit)
+            f.value = req.new_value
+            f.verification_state = FactVerificationState.USER_CORRECTED
+            f.provenance = FactProvenanceType.USER_CLARIFICATION
+            break
+    # Increment version
+    try:
+        curr_ver = float(dna.version.replace("v", ""))
+        dna.version = f"v{curr_ver + 0.1:.1f}"
+    except Exception:
+        dna.version = "v1.1"
+
+    return {"status": "SUCCESS", "fact_id": req.fact_id, "new_version": dna.version, "dna": dna}
+
 
 
 @router.get("/{product_id}/applicability", response_model=List[ApplicabilityDecision])

@@ -1,41 +1,236 @@
+"""Deterministic Product Fact Extraction and Clarification Engine for Layer 2.
+
+Implements the SIH Presentation Layer 2 workflow:
+RAW MULTI-MODAL INPUT -> PRODUCT FACT EXTRACTION -> FACT NORMALIZATION
+-> PROVENANCE + CONFIDENCE -> MISSING/CONFLICTING FACT DETECTION
+-> CLARIFICATION QUEUE -> USER CONFIRMATION -> FINAL PRODUCT DNA -> LAYER 3 AI ORCHESTRATOR.
+
+Enforces cardinal invariants:
+USER_TEXT != PRODUCT FACT != EVIDENCE != COMPLIANCE
+NO SUFFICIENT PRODUCT INFORMATION -> ASK / UNKNOWN
+NO VERIFIED EVIDENCE -> NO SATISFIED
+LLM COMPLIANCE AUTHORITY = 0%
+"""
+
 import re
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from backend.app.schemas.product_dna import (
     ProductDNACore,
     DNAAttribute,
     AttributeProvenance,
     ClarificationRequirement,
     ProvenanceClassification,
+    ProductFact,
+    FactProvenanceType,
+    FactVerificationState,
+    ProductDNAVersionRecord,
 )
 from backend.app.services.product_dna.normalizer import (
     normalize_capacity,
     normalize_electrical,
     normalize_material,
+    check_physical_plausibility,
 )
+from backend.app.services.product_dna.detector import fact_anomaly_detector
+
+
+def extract_structured_facts_from_payload(
+    text: str,
+    source_name: Optional[str] = None,
+    default_provenance: FactProvenanceType = FactProvenanceType.USER_CLAIM,
+    bom_components: Optional[List[Dict[str, Any]]] = None,
+) -> Tuple[List[ProductFact], str, str, Optional[str], Optional[str]]:
+    """Extract granular typed facts with provenance and confidence from input text and BOM."""
+    clean_text, injection_warnings = fact_anomaly_detector.sanitize_adversarial_input(text)
+    raw_lower = clean_text.lower()
+
+    facts: List[ProductFact] = []
+    product_name = "Specified Product"
+    category = "General Goods"
+    sub_category = None
+    intended_use = None
+
+    # 1. Product Classification
+    if any(k in raw_lower for k in ["kettle", "electric kettle"]):
+        product_name = "Electric Kettle"
+        category = "Electrical & Domestic Appliances"
+        sub_category = "Water Heating Appliances"
+        intended_use = "domestic_boiling"
+    elif any(k in raw_lower for k in ["immersion water heater", "water heater", "immersion heater"]):
+        product_name = "Electric Immersion Water Heater"
+        category = "Kitchen & Domestic Appliances"
+        sub_category = "Liquid Heating Appliances"
+        intended_use = "domestic_water_heating"
+    elif any(k in raw_lower for k in ["flask", "bottle", "drinkware", "thermos", "is 17526"]):
+        product_name = "Vacuum Insulated Flask"
+        category = "Drinkware & Food Contact Containers"
+        sub_category = "Vacuum Insulated Containers"
+        intended_use = "domestic_drinking"
+    elif any(k in raw_lower for k in ["helmet", "headgear"]):
+        product_name = "Two-Wheeler Protective Helmet"
+        category = "Protective Equipment & Helmets"
+        sub_category = "Rider Protective Equipment"
+        intended_use = "motorcycle_safety"
+
+    # 2. Extract Electrical Ratings
+    elec_data = normalize_electrical(clean_text)
+    if "voltage" in elec_data:
+        facts.append(
+            ProductFact(
+                fact_id="FACT-VOLTAGE-01",
+                field_name="rated_voltage",
+                display_name="Rated Supply Voltage",
+                value=elec_data["voltage"],
+                raw_value=elec_data.get("voltage"),
+                unit=elec_data.get("voltage_unit", "V"),
+                source=source_name,
+                provenance=default_provenance,
+                confidence=0.95,
+                verification_state=FactVerificationState.NEEDS_CONFIRMATION,
+            )
+        )
+    if "wattage" in elec_data:
+        facts.append(
+            ProductFact(
+                fact_id="FACT-POWER-01",
+                field_name="rated_power_input",
+                display_name="Rated Power Input / Wattage",
+                value=elec_data["wattage"],
+                raw_value=str(elec_data.get("wattage")),
+                unit=elec_data.get("wattage_unit", "W"),
+                source=source_name,
+                provenance=default_provenance,
+                confidence=0.95,
+                verification_state=FactVerificationState.NEEDS_CONFIRMATION,
+            )
+        )
+    if "frequency" in elec_data:
+        facts.append(
+            ProductFact(
+                fact_id="FACT-FREQ-01",
+                field_name="rated_frequency",
+                display_name="Rated Operating Frequency",
+                value=elec_data["frequency"],
+                raw_value=str(elec_data.get("frequency")),
+                unit=elec_data.get("frequency_unit", "Hz"),
+                source=source_name,
+                provenance=default_provenance,
+                confidence=0.95,
+                verification_state=FactVerificationState.NEEDS_CONFIRMATION,
+            )
+        )
+
+    # 3. Extract Capacity
+    cap_match = re.search(r"(\d+(?:\.\d+)?\s*(?:ml|millilitres?|litres?|liter|l)\b)", raw_lower)
+    if cap_match:
+        cap_val, cap_unit = normalize_capacity(cap_match.group(1))
+        if cap_val is not None:
+            facts.append(
+                ProductFact(
+                    fact_id="FACT-CAPACITY-01",
+                    field_name="nominal_capacity",
+                    display_name="Nominal Fluid Capacity",
+                    value=cap_val,
+                    raw_value=str(cap_val),
+                    unit=cap_unit or "ml",
+                    source=source_name,
+                    provenance=default_provenance,
+                    confidence=0.98,
+                    verification_state=FactVerificationState.NEEDS_CONFIRMATION,
+                )
+            )
+
+    # 4. Extract Materials
+    for mat_candidate in ["stainless steel 304", "ss 304", "stainless steel 316", "polypropylene", "copper", "aluminum", "silicone"]:
+        if mat_candidate in raw_lower:
+            norm_mat = normalize_material(mat_candidate)
+            field = "inner_lining_material" if "flask" in product_name.lower() else "sheath_material"
+            facts.append(
+                ProductFact(
+                    fact_id=f"FACT-MAT-{len(facts)+1}",
+                    field_name=field,
+                    display_name="Primary Construction Material",
+                    value=norm_mat,
+                    raw_value=mat_candidate,
+                    source=source_name,
+                    provenance=default_provenance,
+                    confidence=0.90,
+                    verification_state=FactVerificationState.NEEDS_CONFIRMATION,
+                )
+            )
+            break
+
+    # 5. Extract BOM Facts if available (and detect conflicts!)
+    if bom_components:
+        for c in bom_components:
+            part_name = c.get("name", "")
+            part_spec = c.get("specification", "")
+
+            bom_elec = normalize_electrical(part_spec)
+            if "wattage" in bom_elec:
+                facts.append(
+                    ProductFact(
+                        fact_id=f"FACT-BOM-POWER-{len(facts)+1}",
+                        field_name="rated_power_input",
+                        display_name="Heating Element Wattage (BOM)",
+                        value=bom_elec["wattage"],
+                        raw_value=part_spec,
+                        unit="W",
+                        source=f"BOM Part {c.get('part_number', '')} ({part_name})",
+                        provenance=FactProvenanceType.BOM_FACT,
+                        confidence=0.98,
+                        verification_state=FactVerificationState.NEEDS_CONFIRMATION,
+                    )
+                )
+
+    # 6. Calculate DERIVED_VALUE facts deterministically (Never invent!)
+    p_fact = next((f for f in facts if f.field_name == "rated_power_input" and f.value), None)
+    v_fact = next((f for f in facts if f.field_name == "rated_voltage" and f.value), None)
+    if p_fact and v_fact:
+        try:
+            p_num = float(p_fact.value)
+            v_num = float(str(v_fact.value).split("-")[0])
+            if v_num > 0:
+                current_calc = round(p_num / v_num, 2)
+                facts.append(
+                    ProductFact(
+                        fact_id="FACT-DERIVED-CURRENT-01",
+                        field_name="nominal_current_calculated",
+                        display_name="Calculated Nominal Operating Current",
+                        value=current_calc,
+                        unit="A",
+                        source="Deterministic Ohm's Law Calculator",
+                        provenance=FactProvenanceType.DERIVED_VALUE,
+                        confidence=1.0,
+                        verification_state=FactVerificationState.CONFIRMED,
+                        derivation_rule="Current (A) = Rated Power (W) / Supply Voltage (V)",
+                        source_fact_ids=[p_fact.fact_id, v_fact.fact_id],
+                    )
+                )
+        except Exception:
+            pass
+
+    # 7. Check physical plausibility and cross-source conflicts
+    facts = fact_anomaly_detector.validate_facts_plausibility(facts, category)
+    facts = fact_anomaly_detector.detect_conflicts_between_facts(facts)
+
+    return facts, product_name, category, sub_category, intended_use
 
 
 def extract_product_dna_from_text(
     text: str,
     source_document: Optional[str] = None,
     source_page: Optional[int] = None,
+    bom_components: Optional[List[Dict[str, Any]]] = None,
 ) -> ProductDNACore:
-    """Extract structured Product DNA from raw user input or technical document text.
-    
-    Adheres strictly to the provenance and confidence model:
-    - Extracted attributes have explicit confidence (0.0 to 1.0) and extraction_method.
-    - Missing required attributes are NOT guessed or fabricated.
-    - Invariant: User text is marked USER_CLAIM; documents are marked DOCUMENT_EVIDENCE.
-    """
-    from backend.app.services.security.prompt_guard import scan_and_sanitize_untrusted_text
-
+    """Complete product DNA extractor ensuring 100% backward compatibility and rich facts."""
     prov_type = (
         ProvenanceClassification.DOCUMENT_EVIDENCE
         if source_document
         else ProvenanceClassification.USER_CLAIM
     )
 
-    scan_res = scan_and_sanitize_untrusted_text(text)
-    clean_text = scan_res.sanitized_text
+    clean_text, _ = fact_anomaly_detector.sanitize_adversarial_input(text)
     raw_lower = clean_text.lower()
     attributes: List[DNAAttribute] = []
     materials: List[str] = []
@@ -232,6 +427,18 @@ def extract_product_dna_from_text(
             )
         )
 
+    # Also build the rich ProductFact list for Layer 2
+    facts, _, _, _, _ = extract_structured_facts_from_payload(
+        text=text,
+        source_name=source_document,
+        default_provenance=(
+            FactProvenanceType.VERIFIED_DOCUMENT_FACT
+            if source_document
+            else FactProvenanceType.USER_CLAIM
+        ),
+        bom_components=bom_components,
+    )
+
     return ProductDNACore(
         product_name=product_name,
         category=category,
@@ -242,4 +449,6 @@ def extract_product_dna_from_text(
         insulated=insulated,
         attributes=attributes,
         pending_clarifications=[],
+        version="v1.0",
+        facts=facts,
     )

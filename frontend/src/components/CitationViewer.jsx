@@ -17,14 +17,14 @@ export function CitationViewer() {
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 border-b border-slate-200">
         <div>
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-blue-400" />
+          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-indigo-600" />
             Citation Guard Provenance Model (Zero LLM Fabrications)
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5">
             Every compliance claim must maintain an auditable chain back to the official Indian Standard and source clause.
           </p>
         </div>
@@ -32,31 +32,31 @@ export function CitationViewer() {
       </div>
 
       <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="p-4 rounded-lg bg-slate-950/70 border border-slate-800 space-y-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-blue-300">
-            <FileText className="w-4 h-4" /> Authoritative Indian Standard Clause
+        <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-700">
+            <FileText className="w-4 h-4 text-indigo-600" /> Authoritative Indian Standard Clause
           </div>
-          <div className="font-mono text-xs text-slate-200 bg-slate-900/90 p-3 rounded border border-slate-800">
-            <span className="text-blue-400 font-bold">{exampleCitation.standard_number}</span> &bull;{' '}
-            <span className="text-amber-400 font-semibold">{exampleCitation.clause_number}</span> (Page {exampleCitation.page_number})
-            <p className="mt-2 text-slate-300 font-sans italic">"{exampleCitation.supporting_text}"</p>
+          <div className="font-mono text-xs text-slate-800 bg-white p-3 rounded border border-slate-200 shadow-2xs">
+            <span className="text-indigo-700 font-bold">{exampleCitation.standard_number}</span> &bull;{' '}
+            <span className="text-amber-700 font-semibold">{exampleCitation.clause_number}</span> (Page {exampleCitation.page_number})
+            <p className="mt-2 text-slate-700 font-sans italic">"{exampleCitation.supporting_text}"</p>
           </div>
         </div>
 
-        <div className="p-4 rounded-lg bg-slate-950/70 border border-slate-800 space-y-3">
-          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-300">
-            <Bookmark className="w-4 h-4" /> Verified Product Evidence & Provenance
+        <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
+            <Bookmark className="w-4 h-4 text-emerald-600" /> Verified Product Evidence & Provenance
           </div>
-          <div className="font-mono text-xs text-slate-200 bg-slate-900/90 p-3 rounded border border-slate-800 space-y-2">
+          <div className="font-mono text-xs text-slate-800 bg-white p-3 rounded border border-slate-200 shadow-2xs space-y-2">
             <div>
-              <span className="text-slate-400">Source:</span> {exampleCitation.extraction_source}
+              <span className="text-slate-500">Source:</span> {exampleCitation.extraction_source}
             </div>
             <div>
-              <span className="text-slate-400">Extracted Material:</span> Stainless Steel Grade 304
+              <span className="text-slate-500">Extracted Material:</span> Stainless Steel Grade 304
             </div>
             <div>
-              <span className="text-slate-400">Citation Guard Status:</span>{' '}
-              <span className="text-emerald-400 font-semibold">SUPPORTED (Score: {exampleCitation.confidence})</span>
+              <span className="text-slate-500">Citation Guard Status:</span>{' '}
+              <span className="text-emerald-700 font-semibold">SUPPORTED (Score: {exampleCitation.confidence})</span>
             </div>
           </div>
         </div>

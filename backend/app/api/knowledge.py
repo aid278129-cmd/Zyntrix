@@ -428,3 +428,190 @@ async def upload_and_ingest_document(
         is_verified=is_verified,
     )
     return summary
+
+
+# =============================================================================
+# Layer 4: Segmented BIS Knowledge Base — Production APIs
+# =============================================================================
+
+from backend.app.services.knowledge.package_manager import (
+    get_package,
+    get_all_packages,
+    get_coverage_dashboard,
+    validate_dataset_integrity,
+)
+from backend.app.services.knowledge.knowledge_retriever import knowledge_retriever
+
+
+@router.get(
+    "/knowledge/standards",
+    summary="List All Standards (Layer 4 Knowledge Packages)",
+    description="Returns hierarchical standard knowledge packages with scope, QCO, requirements, and provenance.",
+)
+async def list_knowledge_standards(
+    category: Optional[str] = None,
+    verification_status: Optional[str] = None,
+):
+    packages = get_all_packages()
+    results = []
+    for pkg in packages:
+        if category and category.lower() not in pkg.product_category.lower():
+            continue
+        if verification_status and verification_status.upper() != pkg.verification_status.value:
+            continue
+        results.append({
+            "standard_number": pkg.standard_number,
+            "full_standard_code": pkg.full_standard_code,
+            "title": pkg.title,
+            "short_title": pkg.short_title,
+            "product_category": pkg.product_category,
+            "scheme": pkg.scheme,
+            "status": pkg.status,
+            "scope": pkg.scope,
+            "qco_order": pkg.regulatory_order_name,
+            "requirements_count": len(pkg.requirements),
+            "test_parameters_count": len(pkg.test_parameters),
+            "verification_status": pkg.verification_status.value,
+            "acquisition_status": pkg.acquisition_status.value,
+            "knowledge_version": pkg.knowledge_version,
+        })
+    return results
+
+
+@router.get(
+    "/knowledge/standards/{standard_id}",
+    summary="Get Full Standard Knowledge Package (Layer 4)",
+    description="Returns the complete hierarchical knowledge package for a standard.",
+)
+async def get_knowledge_standard(standard_id: str):
+    pkg = get_package(standard_id)
+    if not pkg:
+        return {
+            "standard_number": standard_id,
+            "status": "NOT_IN_KNOWLEDGE_BASE",
+            "message": f"Standard '{standard_id}' is not present in the verified BIS knowledge base. "
+                       f"The system does not speculate or invent unverified standards.",
+        }
+    return pkg.model_dump()
+
+
+@router.get(
+    "/knowledge/standards/{standard_id}/scope",
+    summary="Get Standard Scope (Layer 4)",
+)
+async def get_knowledge_standard_scope(standard_id: str):
+    pkg = get_package(standard_id)
+    if not pkg:
+        return {"standard_number": standard_id, "status": "NOT_IN_KNOWLEDGE_BASE"}
+    return {
+        "standard_number": pkg.standard_number,
+        "title": pkg.title,
+        "scope": pkg.scope or "OFFICIAL_DOCUMENT_ACQUISITION_PENDING",
+        "product_category": pkg.product_category,
+        "industry": pkg.industry,
+        "verification_status": pkg.verification_status.value,
+    }
+
+
+@router.get(
+    "/knowledge/standards/{standard_id}/requirements",
+    summary="Get Standard Requirements (Layer 4)",
+    description="Returns segmented clause-level requirements with provenance.",
+)
+async def get_knowledge_standard_requirements(standard_id: str):
+    pkg = get_package(standard_id)
+    if not pkg:
+        return {"standard_number": standard_id, "status": "NOT_IN_KNOWLEDGE_BASE", "requirements": []}
+
+    if not pkg.requirements:
+        return {
+            "standard_number": pkg.standard_number,
+            "status": "OFFICIAL_DOCUMENT_ACQUISITION_PENDING",
+            "requirements": [],
+            "message": f"Full clause text for {pkg.standard_number} requires authorized procurement. "
+                       f"Only metadata and scope are available.",
+        }
+
+    return {
+        "standard_number": pkg.standard_number,
+        "title": pkg.title,
+        "requirements_count": len(pkg.requirements),
+        "requirements": [r.model_dump() for r in pkg.requirements],
+        "verification_status": pkg.verification_status.value,
+    }
+
+
+@router.get(
+    "/knowledge/standards/{standard_id}/evidence-requirements",
+    summary="Get Standard Evidence Requirements (Layer 4)",
+    description="Returns required evidence types mapped to clauses.",
+)
+async def get_knowledge_evidence_requirements(standard_id: str):
+    pkg = get_package(standard_id)
+    if not pkg:
+        return {"standard_number": standard_id, "status": "NOT_IN_KNOWLEDGE_BASE"}
+
+    evidence_map = []
+    for req in pkg.requirements:
+        evidence_map.append({
+            "clause_number": req.clause_number,
+            "clause_title": req.clause_title,
+            "evidence_types": req.evidence_types,
+            "verification_status": req.verification_status.value,
+        })
+
+    return {
+        "standard_number": pkg.standard_number,
+        "title": pkg.title,
+        "required_evidence_types": pkg.required_evidence_types,
+        "clause_evidence_map": evidence_map,
+        "certification_route": pkg.certification_route,
+    }
+
+
+@router.get(
+    "/knowledge/search",
+    summary="Hybrid Knowledge Retrieval (Layer 4)",
+    description="Retrieval with standard/category/clause filters and provenance-rich results.",
+)
+async def search_knowledge(
+    query: str,
+    standard: Optional[str] = None,
+    category: Optional[str] = None,
+    clause: Optional[str] = None,
+    verification: Optional[str] = None,
+    top_k: int = 10,
+):
+    results = knowledge_retriever.search(
+        query=query,
+        standard_filter=standard,
+        category_filter=category,
+        clause_filter=clause,
+        verification_filter=verification,
+        top_k=top_k,
+    )
+    return [r.model_dump() for r in results]
+
+
+@router.get(
+    "/knowledge/health",
+    summary="Knowledge Base Health & Coverage Diagnostics (Layer 4)",
+    description="Returns coverage dashboard, dataset integrity, and knowledge health metrics.",
+)
+async def get_knowledge_health():
+    coverage = get_coverage_dashboard()
+    integrity = validate_dataset_integrity()
+    return {
+        "status": "OPERATIONAL" if integrity["integrity_valid"] else "INTEGRITY_WARNING",
+        "coverage": coverage.model_dump(),
+        "integrity": integrity,
+        "invariants": {
+            "NO_VERIFIED_SOURCE_NO_REGULATORY_CLAIM": True,
+            "UNKNOWN_IS_UNKNOWN": True,
+            "MISSING_CLAUSE_TEXT_DO_NOT_INVENT": True,
+            "WRONG_STANDARD_REJECT": True,
+            "UNVERIFIED_KNOWLEDGE_NOT_AUTHORITATIVE": True,
+            "LLM_NEVER_CREATES_BIS_KNOWLEDGE": True,
+        },
+    }
+
