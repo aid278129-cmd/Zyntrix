@@ -185,19 +185,25 @@ async def process_unified_input(
 
         # Extraction by Mode
         if input_mode == InputMode.PDF:
-            pdf_result = extract_pdf_content(file_bytes, source_filename)
-            extracted_text = pdf_result.text
+            pdf_result = extract_pdf_content(file_bytes, filename=source_filename)
+            extracted_text = "\n\n".join(p.text for p in pdf_result.pages if p.text.strip())
             provenance = InputProvenanceType.DOCUMENT_EVIDENCE
 
         elif input_mode == InputMode.IMAGE_OCR:
-            ocr_text, ocr_ok = extract_text_from_image_bytes(file_bytes)
-            extracted_text = ocr_text if ocr_ok else "Product rating plate image attached."
+            ocr_res = extract_text_from_image_bytes(file_bytes)
+            if ocr_res.success and ocr_res.text:
+                extracted_text = ocr_res.text
+            else:
+                extracted_text = f"Product image attached. {ocr_res.details or ''}".strip()
             provenance = InputProvenanceType.OCR
 
         elif input_mode == InputMode.BOM:
             content_str = file_bytes.decode("utf-8", errors="ignore")
             bom_parsed = bom_parser_service.parse_bom_content(content_str, filename=source_filename)
-            extracted_text = f"Parsed BOM with {bom_parsed['total_parts']} components. Materials: {', '.join(bom_parsed['materials'])}"
+            extracted_text = (
+                f"Parsed BOM with {bom_parsed['total_parts']} components. "
+                f"Materials: {', '.join(bom_parsed['materials']) if bom_parsed['materials'] else 'Standard'}"
+            )
             for c in bom_parsed["components"]:
                 bom_components.append(
                     BOMComponentItem(
@@ -212,7 +218,10 @@ async def process_unified_input(
 
         elif input_mode == InputMode.VOICE:
             voice_res = await voice_transcription_service.transcribe_audio(file_bytes, filename=source_filename)
-            extracted_text = voice_res.get("text", "")
+            if voice_res.get("success"):
+                extracted_text = voice_res.get("text", "")
+            else:
+                extracted_text = f"Voice audio query: {voice_res.get('error', 'Audio input recorded.')}"
             provenance = InputProvenanceType.VOICE_TRANSCRIPT
 
     # 2. Handle Direct Raw Content / Manual Spec

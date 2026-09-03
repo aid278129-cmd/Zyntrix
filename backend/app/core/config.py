@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     # Demo / Judge Mode
     DEMO_MODE: bool = False
 
+    # Multi-Modal Layer 1 Services Configuration
+    TESSERACT_CMD: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
+
     # Security & CORS
     SECRET_KEY: str = "zyntrix-development-secret-key-change-in-production"
     ALLOWED_CORS_ORIGINS: List[str] = [

@@ -43,7 +43,21 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
     'Civil, Steel & Cement',
   ];
 
-  // Fetch requirements on mount or category change
+  // Layer 1 Runtime Dependencies State
+  const [layer1Status, setLayer1Status] = useState({
+    pdfFunctional: true,
+    ocrFunctional: false,
+    ocrStatus: 'FALLBACK_ACTIVE',
+    voiceFunctional: false,
+    voiceStatus: 'NOT_CONFIGURED',
+  });
+
+  // Fetch requirements & dependencies on mount
+  useEffect(() => {
+    fetchDependencies();
+    fetchRequirements();
+  }, []);
+
   useEffect(() => {
     fetchRequirements();
   }, [category, targetStandard]);
@@ -52,6 +66,26 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
   useEffect(() => {
     evaluateLocalReadiness();
   }, [productName, category, description, targetStandard]);
+
+  const fetchDependencies = async () => {
+    try {
+      const res = await fetch('/api/v1/system/dependencies');
+      if (res.ok) {
+        const data = await res.json();
+        const ocr = data.ocr_diagnostic || {};
+        const voice = data.voice_diagnostic || {};
+        setLayer1Status({
+          pdfFunctional: true,
+          ocrFunctional: ocr.functional === true || ocr.status === 'FUNCTIONAL',
+          ocrStatus: ocr.status || 'FALLBACK_ACTIVE',
+          voiceFunctional: voice.configured === true || voice.status === 'FUNCTIONAL',
+          voiceStatus: voice.status || 'NOT_CONFIGURED',
+        });
+      }
+    } catch (err) {
+      console.warn('Diagnostics fetch notice:', err);
+    }
+  };
 
   const fetchRequirements = async () => {
     try {
@@ -319,13 +353,24 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
       });
       if (res.ok) {
         const data = await res.json();
-        setExtractedNotice(`Whisper STT Ingested (${data.provider}): "${data.text}" [VOICE_TRANSCRIPT]`);
-        if (!productName) setProductName('Electric Immersion Water Heater (Voice Query)');
-        setDescription((prev) => (prev ? prev + '\n\n' : '') + `Transcribed Voice Input: ${data.text}`);
-        setExtractedAttributes([
-          { name: 'Input Source', value: 'Whisper STT Voice Audio', provenance: 'VOICE_TRANSCRIPT' },
-          { name: 'Duration', value: `${data.duration_seconds || 1.5}s`, provenance: 'VOICE_TRANSCRIPT' },
-        ]);
+        if (data.status === 'VOICE_CLOUD_NOT_CONFIGURED' || !data.success) {
+          setValidationIssues([
+            {
+              code: 'VOICE_CLOUD_NOT_CONFIGURED',
+              message: data.error || 'Whisper Speech-to-Text unavailable: OPENAI_API_KEY is not configured.',
+              remediation: 'Configure OPENAI_API_KEY in backend/.env for live cloud Whisper, or click "Test Sample Voice Query" to test with a simulated acoustic sample.',
+            },
+          ]);
+          setExtractedNotice('⚠ Voice STT Unavailable: Configure OPENAI_API_KEY in backend/.env.');
+        } else {
+          setExtractedNotice(`Whisper STT Ingested (${data.provider}): "${data.text}" [VOICE_TRANSCRIPT]`);
+          if (!productName) setProductName('Electric Immersion Water Heater (Voice Query)');
+          setDescription((prev) => (prev ? prev + '\n\n' : '') + `Transcribed Voice Input: ${data.text}`);
+          setExtractedAttributes([
+            { name: 'Input Source', value: 'Whisper STT Voice Audio', provenance: 'VOICE_TRANSCRIPT' },
+            { name: 'Duration', value: `${data.duration_seconds || 1.5}s`, provenance: 'VOICE_TRANSCRIPT' },
+          ]);
+        }
       }
     } catch (err) {
       console.warn('Voice transcription failed:', err);
@@ -548,6 +593,62 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
             <span className="text-indigo-700 font-bold flex items-center gap-1">
               <span className="w-4 h-4 rounded-full bg-indigo-100 text-indigo-700 text-[9px] flex items-center justify-center font-bold">6</span>
               LAYER 2 DNA
+            </span>
+          </div>
+        </div>
+
+        {/* M21: Layer 1 Multi-Modal Runtime Dependencies Status Indicator */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+          {/* PDF */}
+          <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-emerald-950 flex items-center justify-between shadow-2xs">
+            <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+              <span className="material-symbols-outlined text-emerald-600 text-[18px]">picture_as_pdf</span>
+              <span>PDF Ingestion</span>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+              ✓ Native PDF extraction
+            </span>
+          </div>
+
+          {/* Image / OCR */}
+          <div className={`p-2.5 rounded-xl border flex items-center justify-between shadow-2xs ${
+            layer1Status.ocrFunctional
+              ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+              : 'bg-amber-50/70 border-amber-200 text-amber-950'
+          }`}>
+            <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+              <span className={`material-symbols-outlined text-[18px] ${layer1Status.ocrFunctional ? 'text-emerald-600' : 'text-amber-600'}`}>
+                photo_camera
+              </span>
+              <span>Image / OCR</span>
+            </div>
+            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+              layer1Status.ocrFunctional
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                : 'bg-amber-100 text-amber-800 border-amber-200'
+            }`} title={layer1Status.ocrFunctional ? 'Tesseract OCR binary active' : 'Tesseract binary not detected; high-contrast fallback active'}>
+              {layer1Status.ocrFunctional ? '✓ Tesseract OCR' : '⚠ OCR unavailable — install/configure Tesseract'}
+            </span>
+          </div>
+
+          {/* Voice STT */}
+          <div className={`p-2.5 rounded-xl border flex items-center justify-between shadow-2xs ${
+            layer1Status.voiceFunctional
+              ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+              : 'bg-amber-50/70 border-amber-200 text-amber-950'
+          }`}>
+            <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+              <span className={`material-symbols-outlined text-[18px] ${layer1Status.voiceFunctional ? 'text-emerald-600' : 'text-amber-600'}`}>
+                mic
+              </span>
+              <span>Voice STT</span>
+            </div>
+            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+              layer1Status.voiceFunctional
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                : 'bg-amber-100 text-amber-800 border-amber-200'
+            }`} title={layer1Status.voiceFunctional ? 'Whisper model active' : 'OPENAI_API_KEY required for live Whisper'}>
+              {layer1Status.voiceFunctional ? '✓ Whisper connected' : '⚠ Voice transcription unavailable — configure Whisper/API'}
             </span>
           </div>
         </div>
@@ -784,14 +885,32 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
                     Capture verbal product specs or test with a simulated acoustic sample.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSampleVoiceQuery}
-                  className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-indigo-700 text-xs font-semibold hover:bg-indigo-50 transition cursor-pointer shadow-2xs"
-                >
-                  Test Sample Voice Query
-                </button>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                    layer1Status.voiceFunctional
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                      : 'bg-amber-100 text-amber-800 border-amber-200'
+                  }`}>
+                    {layer1Status.voiceFunctional ? '✓ Whisper Connected' : '⚠ API Key Unset'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSampleVoiceQuery}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-indigo-700 text-xs font-semibold hover:bg-indigo-50 transition cursor-pointer shadow-2xs"
+                  >
+                    Test Sample Voice Query
+                  </button>
+                </div>
               </div>
+
+              {!layer1Status.voiceFunctional && (
+                <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 flex items-start gap-2">
+                  <span className="material-symbols-outlined text-amber-600 text-[16px] shrink-0 mt-0.5">info</span>
+                  <div>
+                    <strong>Cloud Whisper unconfigured:</strong> For live microphone STT, set <code className="font-mono bg-amber-100 px-1 rounded">OPENAI_API_KEY</code> in <code className="font-mono bg-amber-100 px-1 rounded">backend/.env</code>. Click <strong>Test Sample Voice Query</strong> to test with a verified domestic appliance sample.
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-col items-center justify-center py-6 bg-white rounded-xl border border-slate-200 gap-3">
                 <div
@@ -877,6 +996,16 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
               <p className="text-[11px] text-slate-500">
                 Upload a photo of the product nameplate, marking, or certificate for OCR extraction.
               </p>
+
+              {!layer1Status.ocrFunctional && (
+                <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 flex items-start gap-2">
+                  <span className="material-symbols-outlined text-amber-600 text-[16px] shrink-0 mt-0.5">warning</span>
+                  <div>
+                    <strong>Native Tesseract OCR unavailable:</strong> Offline high-contrast fallback active. To enable native OCR on rating plates, install Tesseract OCR or configure <code className="font-mono bg-amber-100 px-1 rounded">TESSERACT_CMD</code> in <code className="font-mono bg-amber-100 px-1 rounded">backend/.env</code>.
+                  </div>
+                </div>
+              )}
+
               <input
                 type="file"
                 accept="image/*"

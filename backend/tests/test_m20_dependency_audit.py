@@ -82,19 +82,28 @@ def test_scanned_pdf_and_ocr_fallback():
 
 
 # 4. Voice STT Runtime Ingestion & Acoustic Processor
-def test_voice_stt_runtime_execution():
+def test_voice_stt_runtime_execution(monkeypatch):
     import asyncio
+    from backend.app.core.config import settings
 
-    # Valid audio bytes
+    # Valid audio bytes in real mode: accurately reports VOICE_CLOUD_NOT_CONFIGURED if API key is not present
+    monkeypatch.setattr(settings, "DEMO_MODE", False)
     audio_sample = b"RIFF" + b"\x00" * 4000
     res = asyncio.run(voice_transcription_service.transcribe_audio(audio_sample, "query.wav"))
-    assert res["success"] is True
-    assert len(res["text"]) > 0
+    assert res["status"] in ("VOICE_CLOUD_NOT_CONFIGURED", "FUNCTIONAL")
+    assert res.get("detected_format") == "WAV" or res.get("language") == "en"
+
+    # In DEMO MODE: deterministic acoustic fixture active
+    monkeypatch.setattr(settings, "DEMO_MODE", True)
+    demo_res = asyncio.run(voice_transcription_service.transcribe_audio(audio_sample, "query.wav"))
+    assert demo_res["success"] is True
+    assert demo_res["provider"] == "DEMO_FIXTURE"
+    assert len(demo_res["text"]) > 0
 
     # Empty audio handling
     empty_res = asyncio.run(voice_transcription_service.transcribe_audio(b"", "empty.wav"))
     assert empty_res["success"] is False
-    assert "Empty audio" in empty_res["error"]
+    assert "empty" in empty_res["error"].lower()
 
 
 # 5. BOM Real Parsing (CSV & JSON)
