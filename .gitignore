@@ -44,6 +44,8 @@ storage/
 backend/storage/
 *.log
 *.sqlite3
+*.db
+data/*.db
 
 # IDE / OS
 .vscode/

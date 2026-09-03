@@ -42,7 +42,7 @@ USER QUERY / ENRICHED PRODUCT DNA
 
 ## 3. Evidence Extraction & Conflict Detection
 
-- **Structured Evidence Model** ([evidence_extractor.py](file:///e:/Zyntrix/backend/app/services/gap_analysis/evidence_extractor.py)):
+- **Structured Evidence Model** ([evidence_extractor.py](../backend/app/services/gap_analysis/evidence_extractor.py)):
   - Fields: `evidence_id`, `evidence_type`, `source_text`, `attribute`, `raw_value`, `normalized_value`, `unit`, `authority`, `confidence`.
   - Authority Levels: `LAB_REPORT` (high evidentiary authority), `CERTIFICATE`, `MANUFACTURER_DOCUMENT`, `USER_ASSERTED`.
 - **Conflict Handling**:
@@ -53,7 +53,7 @@ USER QUERY / ENRICHED PRODUCT DNA
 
 ## 4. Laboratory Knowledge & Testing Roadmap
 
-- **Testing Roadmap Compiler** ([test_roadmap.py](file:///e:/Zyntrix/backend/app/services/laboratory/test_roadmap.py)):
+- **Testing Roadmap Compiler** ([test_roadmap.py](../backend/app/services/laboratory/test_roadmap.py)):
   - Compiles standard testing roadmaps (test method standard, required apparatus, pass criteria, and BIS Product Manual sampling guidelines).
   - *No false claims*: Produces a testing roadmap for manufacturers without claiming physical execution.
 - **Verified Laboratory Registry**:
@@ -63,7 +63,7 @@ USER QUERY / ENRICHED PRODUCT DNA
 
 ## 5. Benchmark Expansion ($N=10$) & Ablation Study
 
-Evaluated using [m3_evaluator.py](file:///e:/Zyntrix/backend/app/services/evaluation/m3_evaluator.py) on [m3_benchmark_suite.json](file:///e:/Zyntrix/data/test_cases/m3_benchmark_suite.json):
+Evaluated using [m3_evaluator.py](../backend/app/services/evaluation/m3_evaluator.py) on [m3_benchmark_suite.json](../data/test_cases/m3_benchmark_suite.json):
 
 | Retrieval Strategy | Recall@1 | Recall@3 | Recall@5 | MRR | Avg Latency |
 | :--- | :---: | :---: | :---: | :---: | :---: |

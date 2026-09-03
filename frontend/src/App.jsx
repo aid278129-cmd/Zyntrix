@@ -25,22 +25,29 @@ import {
   BarChart3,
 } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
 export default function App() {
   const [health, setHealth] = useState(null);
   const [systemInfo, setSystemInfo] = useState(null);
   const [activeTab, setActiveTab] = useState('assessment');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
 
   const fetchHealth = async () => {
     setIsRefreshing(true);
     try {
-      const res = await fetch('/health');
+      const res = await fetch(`${API_BASE}/health`);
       if (res.ok) {
         const data = await res.json();
         setHealth(data);
+        setConnectionError(false);
+      } else {
+        setConnectionError(true);
       }
     } catch (err) {
       console.warn('Backend connection error:', err);
+      setConnectionError(true);
     } finally {
       setIsRefreshing(false);
     }
@@ -48,7 +55,7 @@ export default function App() {
 
   const fetchSystemInfo = async () => {
     try {
-      const res = await fetch('/api/v1/system/info');
+      const res = await fetch(`${API_BASE}/api/v1/system/info`);
       if (res.ok) {
         const data = await res.json();
         setSystemInfo(data);
@@ -135,6 +142,25 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-8">
+        {/* Backend Connection Warning Banner */}
+        {connectionError && (
+          <div className="bg-rose-950/80 border border-rose-800 rounded-xl p-4 flex items-center justify-between text-xs text-rose-200">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+              <div>
+                <strong className="block text-white font-semibold">Backend Unreachable</strong>
+                <span>Cannot connect to Zyntrix API server. Ensure backend is running (run <code>start.bat</code> or <code>uvicorn backend.app.main:app --port 8000</code>) or configure <code>VITE_API_BASE_URL</code>.</span>
+              </div>
+            </div>
+            <button
+              onClick={fetchHealth}
+              className="px-3 py-1.5 rounded bg-rose-900 hover:bg-rose-800 text-white font-mono text-[11px] font-semibold border border-rose-700 transition shrink-0"
+            >
+              Retry Connection
+            </button>
+          </div>
+        )}
+
         {/* Core Architecture Notice */}
         <div className="bg-gradient-to-r from-blue-950/60 to-slate-900 border border-blue-900/50 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>

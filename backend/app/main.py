@@ -12,7 +12,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.core.config import settings
 from backend.app.core.logging import logger, RequestLoggingMiddleware
-from backend.app.core.exceptions import ComplianceCompilerException, compliance_exception_handler
+from backend.app.core.exceptions import (
+    ComplianceCompilerException,
+    compliance_exception_handler,
+    global_exception_handler,
+)
 from backend.app.api.health import router as health_router
 from backend.app.api import api_router
 from backend.app.database.postgres import init_db_extensions
@@ -23,6 +27,7 @@ from backend.app.database.session import create_tables_if_needed
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.PROJECT_NAME} (Team: {settings.PROJECT_TEAM}) v{settings.VERSION}")
     logger.info(f"Environment: {settings.ENVIRONMENT} | SIH Problem: {settings.SIH_PROBLEM_ID}")
+    logger.info(f"Host: {settings.HOST}:{settings.PORT} | Demo Mode: {settings.DEMO_MODE}")
 
     # Attempt PostgreSQL extensions initialization & schema creation
     await init_db_extensions()
@@ -53,6 +58,7 @@ app = FastAPI(
 
 # Exception handlers
 app.add_exception_handler(ComplianceCompilerException, compliance_exception_handler)
+app.add_exception_handler(Exception, global_exception_handler)
 
 # Custom logging & request ID middleware
 app.add_middleware(RequestLoggingMiddleware)

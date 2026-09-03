@@ -13,8 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
-# Copy application source
+# Copy backend code and verified BIS knowledge data
 COPY backend /app/backend
+COPY data /app/data
+
+# Create required operational directories
+RUN mkdir -p /app/storage /app/uploads /app/logs /app/generated
 
 ENV PYTHONPATH=/app
 EXPOSE 8000
