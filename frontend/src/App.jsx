@@ -7,8 +7,6 @@ import { AssessmentWorkspace } from './components/AssessmentWorkspace';
 import { ProductWorkspace } from './components/ProductWorkspace';
 import { KnowledgeBaseExplorer } from './components/KnowledgeBaseExplorer';
 import { ComplianceAssistantPage } from './components/ComplianceAssistantPage';
-import { EvaluationConsole } from './components/EvaluationConsole';
-import { HealthDiagnosticPanel } from './components/HealthDiagnosticPanel';
 import { TemplateGeneratorView } from './components/TemplateGeneratorView';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -178,12 +176,6 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'workspace' && (
-            <div className="flex-1 p-4 md:p-6 lg:p-8 bg-[#F3F4F6] overflow-y-auto">
-              <ProductWorkspace />
-            </div>
-          )}
-
           {activeTab === 'standards' && (
             <div className="flex-1 p-4 md:p-6 lg:p-8 bg-[#F3F4F6] overflow-y-auto">
               <AssessmentWorkspace />
@@ -194,29 +186,13 @@ export default function App() {
             <ComplianceAssistantPage activeAssessment={activeAssessment} />
           )}
 
-          {activeTab === 'passport' && (
-            <div className="flex-1 p-4 md:p-6 lg:p-8 bg-[#F3F4F6] overflow-y-auto">
-              <AssessmentWorkspace />
-            </div>
-          )}
-
           {activeTab === 'knowledge' && (
             <div className="flex-1 p-4 md:p-6 lg:p-8 bg-[#F3F4F6] overflow-y-auto">
               <KnowledgeBaseExplorer />
             </div>
           )}
 
-          {activeTab === 'evaluation' && (
-            <div className="flex-1 p-4 md:p-6 lg:p-8 bg-[#F3F4F6] overflow-y-auto">
-              <EvaluationConsole />
-            </div>
-          )}
 
-          {activeTab === 'diagnostics' && (
-            <div className="flex-1 p-4 md:p-6 lg:p-8 bg-[#F3F4F6] overflow-y-auto space-y-6">
-              <HealthDiagnosticPanel health={health} onRefresh={fetchHealth} />
-            </div>
-          )}
 
           {activeTab === 'templates' && (
             <TemplateGeneratorView onNavigate={setActiveTab} />

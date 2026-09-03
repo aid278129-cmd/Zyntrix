@@ -153,6 +153,161 @@ export function TemplateGeneratorView({ onNavigate }) {
     );
   }, [currentStandardData, selectedStandard]);
 
+  // Generate Product Information PDF Guide (opens in new tab for user to print/save)
+  const generateProductInfoPdf = () => {
+    const std = currentStandardData;
+    const requiredFields = std.fields.filter((f) => f.level === 'REQUIRED');
+    const optionalFields = std.fields.filter((f) => f.level === 'OPTIONAL');
+
+    const fieldRows = (fields) =>
+      fields
+        .map(
+          (f) => `
+        <tr>
+          <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:600;color:#1e293b;font-size:11px;">${f.name}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:11px;">${f.category}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-family:monospace;color:#475569;font-size:10px;">${f.clause}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-family:monospace;color:#334155;font-size:10px;">${f.unit || '—'}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#4f46e5;font-size:10px;font-style:italic;">${f.sample}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;"><div style="background:#fff;border:1px solid #cbd5e1;border-radius:4px;height:28px;min-width:120px;"></div></td>
+        </tr>`
+        )
+        .join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zyntrix Product Information Guide — ${selectedStandard}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #fff; color: #1e293b; font-size: 12px; padding: 32px 40px; }
+    .header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 3px solid #4f46e5; padding-bottom: 18px; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon { background: #4f46e5; color: #fff; font-weight: 800; font-size: 14px; width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .brand-name { font-size: 18px; font-weight: 800; color: #1e293b; }
+    .brand-sub { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; }
+    .doc-info { text-align: right; }
+    .doc-title { font-size: 11px; font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em; }
+    .doc-date { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+    .page-title { font-size: 22px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+    .page-subtitle { font-size: 12px; color: #64748b; margin-bottom: 20px; line-height: 1.5; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; font-family: monospace; }
+    .badge-std { background: #ede9fe; color: #4f46e5; border: 1px solid #c4b5fd; }
+    .badge-qco { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #4f46e5; border-radius: 6px; padding: 12px 16px; margin: 16px 0 24px; font-size: 11px; color: #475569; line-height: 1.6; }
+    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin: 20px 0 8px; display: flex; align-items: center; gap: 6px; }
+    .section-title::before { content: ''; display: block; width: 3px; height: 14px; background: #4f46e5; border-radius: 2px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+    thead tr { background: #f1f5f9; }
+    thead th { padding: 10px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #64748b; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    .required-badge { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 700; font-family: monospace; }
+    .optional-badge { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 700; font-family: monospace; }
+    .instructions { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 20px 0; }
+    .instructions h3 { font-size: 12px; font-weight: 700; color: #166534; margin-bottom: 8px; }
+    .instructions ol { padding-left: 20px; }
+    .instructions li { font-size: 11px; color: #15803d; line-height: 1.7; }
+    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; color: #94a3b8; font-size: 10px; }
+    @media print { body { padding: 20px 24px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <div class="brand-icon">ZY</div>
+      <div>
+        <div class="brand-name">Zyntrix</div>
+        <div class="brand-sub">BIS Compliance Compiler</div>
+      </div>
+    </div>
+    <div class="doc-info">
+      <div class="doc-title">Product Information Guide</div>
+      <div class="doc-date">Generated: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+    </div>
+  </div>
+
+  <h1 class="page-title">Product Information Input Guide</h1>
+  <p class="page-subtitle">
+    This guide shows <strong>exactly what product information to fill in</strong> for BIS compliance assessment.
+    Each row below is a required or optional data field. Fill in the <em>"Your Value"</em> column with your actual product specifications.
+  </p>
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+    <span class="badge badge-std">${selectedStandard}</span>
+    <span class="badge badge-qco">${std.qcoMandate}</span>
+    <span class="badge" style="background:#f0f9ff;color:#075985;border:1px solid #bae6fd;">${std.category}</span>
+  </div>
+
+  <div class="info-box">
+    <strong>${std.name}:</strong> ${std.description}
+  </div>
+
+  <div class="instructions">
+    <h3>📋 How to Use This Guide</h3>
+    <ol>
+      <li>Print this document or open it alongside your NABL lab report / product datasheet.</li>
+      <li>For each <strong>REQUIRED</strong> field (highlighted in red), locate the value from your test report or product specifications.</li>
+      <li>Write or type your actual measured/rated value in the <em>Your Value</em> column.</li>
+      <li>For <strong>OPTIONAL</strong> fields (like lab certificate reference numbers), fill these in if available — they strengthen your compliance evidence.</li>
+      <li>Once all REQUIRED fields are filled, go to <strong>Product Input</strong> in Zyntrix and enter this data for BIS gap analysis.</li>
+      <li>Alternatively, download the CSV template and fill in your values there, then upload it via the BOM Tables input mode.</li>
+    </ol>
+  </div>
+
+  <div class="section-title">REQUIRED Fields — ${requiredFields.length} Parameters</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Field Name</th>
+        <th>Category</th>
+        <th>Standard Clause</th>
+        <th>Unit</th>
+        <th>Example Value (Reference Only)</th>
+        <th>Your Value (Fill In)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${fieldRows(requiredFields)}
+    </tbody>
+  </table>
+
+  ${
+    optionalFields.length > 0
+      ? `<div class="section-title">OPTIONAL Fields — ${optionalFields.length} Parameters</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Field Name</th>
+        <th>Category</th>
+        <th>Standard Clause</th>
+        <th>Unit</th>
+        <th>Example Value (Reference Only)</th>
+        <th>Your Value (Fill In)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${fieldRows(optionalFields)}
+    </tbody>
+  </table>`
+      : ''
+  }
+
+  <div class="footer">
+    <span>Zyntrix • BIS Compliance Compiler • ${selectedStandard}</span>
+    <span>IMPORTANT: Example values are for reference only. Always use your actual certified product data.</span>
+  </div>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      setTimeout(() => win.print(), 800);
+    }
+  };
+
   // Download Trigger Helper
   const triggerFileDownload = (content, filename, mimeType) => {
     const blob = new Blob([content], { type: mimeType });
@@ -253,14 +408,25 @@ export function TemplateGeneratorView({ onNavigate }) {
             </p>
           </div>
 
-          <button
-            onClick={() => onNavigate && onNavigate('analyze')}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer self-start md:self-auto active:scale-[0.99]"
-          >
-            <span>Proceed to Product Input</span>
-            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-          </button>
+          <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
+            <button
+              onClick={generateProductInfoPdf}
+              className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer active:scale-[0.99]"
+              title="Download a PDF guide showing exactly what product information is needed"
+            >
+              <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+              <span>Product Info PDF Guide</span>
+            </button>
+            <button
+              onClick={() => onNavigate && onNavigate('analyze')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer active:scale-[0.99]"
+            >
+              <span>Proceed to Product Input</span>
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </button>
+          </div>
         </div>
+
 
         {/* Notice Banner */}
         {downloadNotice && (
@@ -331,9 +497,44 @@ export function TemplateGeneratorView({ onNavigate }) {
           </div>
         </div>
 
-        {/* 3 Download Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* 4 Download Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Card 0: Product Information PDF Guide */}
+          <div className="bg-rose-50/60 border border-rose-200 rounded-xl p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-rose-400 transition group ring-1 ring-rose-100">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-100 border border-rose-200 px-2 py-0.5 rounded">
+                  Start Here
+                </span>
+                <span className="text-xs font-mono font-bold text-slate-400">.PDF</span>
+              </div>
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-rose-700 transition flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-rose-600 text-[18px]">picture_as_pdf</span>
+                Product Information PDF Guide
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                A fillable guide showing <strong>exactly what product data to collect</strong> for {selectedStandard}. Includes required fields, sample values, clauses, and blank spaces to write in your values.
+              </p>
+              <div className="text-[11px] text-slate-400 font-mono pt-1">
+                Printable / saveable &bull; {currentStandardData.fields.filter(f => f.level === 'REQUIRED').length} required fields
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t border-rose-100">
+              <button
+                type="button"
+                onClick={generateProductInfoPdf}
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer active:scale-[0.99]"
+              >
+                <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                <span>Open PDF Guide</span>
+              </button>
+              <p className="text-center text-[10px] text-rose-600 font-medium">Opens print dialog to save as PDF</p>
+            </div>
+          </div>
+
           {/* Card 1: Technical Specs CSV */}
+
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-indigo-300 transition group">
             <div className="space-y-2">
               <div className="flex items-center justify-between">

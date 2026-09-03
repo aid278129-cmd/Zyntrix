@@ -5,13 +5,9 @@ export function SideNav({ currentView, onNavigate, onNewAnalysis, assessmentsCou
     { id: 'templates', step: '01', label: 'Generate Template', icon: 'description' },
     { id: 'overview', step: '02', label: 'Compliance Overview', icon: 'dashboard' },
     { id: 'analyze', step: '03', label: 'Product Input', icon: 'analytics' },
-    { id: 'workspace', step: '04', label: 'Product DNA', icon: 'fingerprint' },
-    { id: 'standards', step: '05', label: 'BIS Standards & Gaps', icon: 'gavel' },
-    { id: 'assistant', step: '06', label: 'Compliance Copilot', icon: 'smart_toy' },
-    { id: 'passport', step: '07', label: 'Compliance Passport', icon: 'verified_user' },
-    { id: 'knowledge', step: '08', label: 'BIS Standards Catalog', icon: 'menu_book' },
-    { id: 'evaluation', step: '09', label: 'Evaluation Console (M5)', icon: 'bar_chart' },
-    { id: 'diagnostics', step: '10', label: 'Architecture & Health', icon: 'memory' },
+    { id: 'standards', step: '04', label: 'BIS Standards & Gaps', icon: 'gavel' },
+    { id: 'assistant', step: '05', label: 'Compliance Copilot', icon: 'smart_toy' },
+    { id: 'knowledge', step: '06', label: 'BIS Standards Catalog', icon: 'menu_book' },
   ];
 
   return (

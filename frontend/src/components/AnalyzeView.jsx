@@ -33,6 +33,8 @@ export function AnalyzeView({ onAssessmentCreated, onNavigate }) {
 
   // BOM text state
   const [bomText, setBomText] = useState('');
+  const [bomCsvFile, setBomCsvFile] = useState(null);
+  const bomFileInputRef = useRef(null);
 
   const quickCategories = [
     'Kitchen & Domestic Appliances',
@@ -457,6 +459,22 @@ PL-04,3-Pin Plug Top,Polycarbonate / Brass (IS 1293),3-pin 6A 250V,1
 LP-05,Neon Indicator Lamp,Glass / Resistor,230V AC with series 220k,1
 HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
     setBomText(sampleBOM);
+  };
+
+  // BOM CSV File Upload Handler
+  const handleBomCsvUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBomCsvFile(file);
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target?.result;
+      if (typeof text === 'string') {
+        setBomText(text);
+        setExtractedNotice(`CSV file "${file.name}" loaded — ${text.split('\n').length - 1} rows detected. Review below and click Parse.`);
+      }
+    };
+    reader.readAsText(file);
   };
 
   // Download template directly from backend
@@ -940,17 +958,17 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
 
           {inputMode === 'bom' && (
             <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-indigo-600 text-[18px]">table_chart</span>
-                    Bill of Materials (BOM) Tabular Parser (Challenge 03 Mitigation)
+                    Bill of Materials (BOM) Tabular Parser
                   </h4>
                   <p className="text-[11px] text-slate-500">
-                    Multi-component tabular parsing with asynchronous chunking and placeholder validation.
+                    Upload a CSV file or paste BOM data manually. Multi-component tabular parsing with placeholder validation.
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={() => handleDownloadTemplate('bom_csv')}
@@ -966,6 +984,47 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
                     Load Sample BOM
                   </button>
                 </div>
+              </div>
+
+              {/* CSV File Upload Zone */}
+              <div
+                onClick={() => bomFileInputRef.current?.click()}
+                className={`relative border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${
+                  bomCsvFile
+                    ? 'border-emerald-400 bg-emerald-50/40'
+                    : 'border-indigo-300 bg-white hover:border-indigo-500 hover:bg-indigo-50/30'
+                }`}
+              >
+                <input
+                  ref={bomFileInputRef}
+                  type="file"
+                  accept=".csv,.txt"
+                  className="hidden"
+                  onChange={handleBomCsvUpload}
+                />
+                <span className={`material-symbols-outlined text-[28px] ${bomCsvFile ? 'text-emerald-600' : 'text-indigo-500'}`}>
+                  {bomCsvFile ? 'task_alt' : 'upload_file'}
+                </span>
+                {bomCsvFile ? (
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-emerald-800 flex items-center gap-1 justify-center">
+                      <span className="material-symbols-outlined text-[14px]">check</span>
+                      {bomCsvFile.name}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">CSV loaded into editor below. Click to replace.</p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-indigo-700">Click to upload BOM CSV file</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Accepts .csv or .txt • Columns: Part No, Component, Material, Specification, Quantity</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                <div className="flex-1 h-px bg-slate-200" />
+                or paste BOM text manually
+                <div className="flex-1 h-px bg-slate-200" />
               </div>
 
               <textarea
@@ -986,6 +1045,7 @@ HK-06,Suspension Hook,Stainless Steel,Corrosion resistant,1`;
               </button>
             </div>
           )}
+
 
           {inputMode === 'image' && (
             <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
