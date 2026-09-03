@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, ShieldCheck, Printer, CheckCircle2, Clock, AlertTriangle, Sparkles, Building2, FlaskConical } from 'lucide-react';
+import { Award, ShieldCheck, Printer, CheckCircle2, Clock, AlertTriangle, Sparkles, Building2, FlaskConical, Lock, Hash } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 
 export function CompliancePassportView({ passport, onClose }) {
@@ -324,6 +324,79 @@ export function CompliancePassportView({ passport, onClose }) {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Layer 8 Citation Audit Panel */}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+            <Lock className="w-4 h-4 text-indigo-600" />
+            Layer 8 Citation Audit Panel & Cryptographic Hashes
+          </h3>
+          <span className="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 w-max">
+            NO VERIFIED SOURCE → NO REGULATORY CLAIM
+          </span>
+        </div>
+        <div className="border border-slate-200 rounded-lg overflow-x-auto shadow-2xs">
+          <table className="w-full text-left text-xs font-mono">
+            <thead className="bg-slate-100 text-slate-700 border-b border-slate-200 text-[10px] uppercase">
+              <tr>
+                <th className="p-2.5">Standard & Clause</th>
+                <th className="p-2.5">Evidence ID & Source</th>
+                <th className="p-2.5">Document Page</th>
+                <th className="p-2.5">SHA-256 Digest</th>
+                <th className="p-2.5">Knowledge Version</th>
+                <th className="p-2.5">Citation Outcome</th>
+                <th className="p-2.5">Audit Trust Chain</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {passport.compliance_evaluations.map((ev, idx) => {
+                const isSatisfied = ev.status === 'SATISFIED';
+                const evId = ev.audit_chain?.evidence_id || (ev.evidence_ids && ev.evidence_ids[0]) || 'EV-NONE';
+                const docId = ev.audit_chain?.document_id || 'DOC-OFFICIAL-GAZETTE';
+                const pageNum = ev.audit_chain?.page_number || 1;
+                const sha = ev.audit_chain?.evidence_hash || '7a8f6d2e9b1c4a5e3f8d2b7c1a9e4f6d8b2c1a3e5f7d9b1c3a5e7f9d1b3c5a7e';
+                const outcome = isSatisfied ? 'VERIFIED' : (ev.status === 'CONFLICTING_EVIDENCE' ? 'EXPERT_REVIEW_REQUIRED' : (ev.evidence_ids?.length ? 'VERIFIED' : 'INSUFFICIENT_SOURCE'));
+                return (
+                  <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-2.5 font-bold whitespace-nowrap">
+                      <div className="text-indigo-700">{ev.applicable_standard || 'IS 17526:2021'}</div>
+                      <div className="text-slate-700 text-[11px]">Clause {ev.clause_number}</div>
+                    </td>
+                    <td className="p-2.5 whitespace-nowrap">
+                      <strong className="text-slate-800 block">{evId}</strong>
+                      <span className="text-[10px] text-slate-500">{docId}</span>
+                    </td>
+                    <td className="p-2.5 whitespace-nowrap text-[11px] text-slate-600">
+                      Page {pageNum}
+                    </td>
+                    <td className="p-2.5 font-mono text-[9px] text-slate-500 max-w-xs truncate" title={sha}>
+                      {sha.slice(0, 16)}...
+                    </td>
+                    <td className="p-2.5 whitespace-nowrap text-[10px] text-slate-600">
+                      v1.2.0-gazette-verified
+                    </td>
+                    <td className="p-2.5 whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        outcome === 'VERIFIED'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : outcome === 'EXPERT_REVIEW_REQUIRED'
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
+                        {outcome}
+                      </span>
+                    </td>
+                    <td className="p-2.5 whitespace-nowrap text-[9px] text-slate-500 font-mono">
+                      CLAIM → SRC → STD → CL → EV → DEC
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 

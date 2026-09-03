@@ -41,6 +41,7 @@ VERIFIED_STANDARDS_CATALOG: Dict[str, Dict[str, Any]] = {
         "clauses": {
             "7.1": {"title": "Marking Requirements", "req": "General marking of electrical ratings and symbols."},
             "8.1": {"title": "Protection Against Electric Shock", "req": "Adequate protection against contact with live parts."},
+            "13.3": {"title": "Electric Strength at Operating Temperature", "req": "Electric strength withstand 1250 V AC without spark breakdown."},
             "22.1": {"title": "Construction Safety", "req": "General mechanical and electrical construction safeguards."},
         },
     },
@@ -52,10 +53,32 @@ VERIFIED_STANDARDS_CATALOG: Dict[str, Dict[str, Any]] = {
             "4.1": {"title": "Inner Liner Food Contact Material", "req": "Food contact surfaces shall be manufactured from stainless steel grade 304 conforming to IS 6911."},
             "4.2": {"title": "Outer Body Material", "req": "Outer body shall be corrosion-resistant stainless steel or impact-resistant polymer."},
             "4.3": {"title": "Lid Gasket and Seal Material", "req": "Seals in contact with liquid shall be food-grade silicone elastomer conforming to IS 9845."},
+            "4.2.1": {"title": "Raw Material Grade 304 Conformance", "req": "Inner container stainless steel grade 304."},
             "5.1": {"title": "Nominal Capacity Tolerance", "req": "Actual liquid holding capacity shall be within +/- 5% of declared capacity."},
             "5.2": {"title": "Leakage Test Protocol", "req": "Flask filled with water at 90 C and inverted for 10 minutes shall show zero droplets or leakage."},
-            "5.4": {"title": "Impact and Drop Resistance", "req": "Flask dropped filled with water from 1.0 m height onto hardwood floor shall maintain vacuum and not shatter."},
+            "5.3": {"title": "Impact and Drop Resistance Test", "req": "Flask dropped filled with water from 1.0 m height onto concrete floor shall maintain thermal vacuum and no leakage."},
+            "5.4": {"title": "Thermal Insulation Retention Protocol", "req": "Water temperature after 6 hours from initial 95 C shall be >= 60 C for domestic containers."},
             "6.3": {"title": "Heat Retention Protocol", "req": "Water temperature after 6 hours from initial 95 C shall be >= 65 C for <= 1000 ml containers."},
+            "7.1": {"title": "Marking and Packaging", "req": "Legible marking of capacity, manufacturer, standard mark and batch."},
+        },
+    },
+    "IS 4151:2015": {
+        "title": "Protective Helmets for Two Wheeler Riders - Specification",
+        "ministry": "Ministry of Road Transport and Highways",
+        "qco_order": "Two-Wheeler Helmets (Quality Control) Order",
+        "clauses": {
+            "4.1": {"title": "Material Construction", "req": "Shell material shall be high-impact polymer or composite."},
+            "7.1": {"title": "Impact Absorption Test", "req": "Peak acceleration shall not exceed 300g during drop tower test."},
+            "8.1": {"title": "Retention System Test", "req": "Chin strap dynamic extension shall not exceed 25 mm."},
+        },
+    },
+    "IS 9873 (Part 1):2019": {
+        "title": "Safety of Toys - Part 1: Safety Aspects Related to Mechanical and Physical Properties",
+        "ministry": "Ministry of Commerce and Industry",
+        "qco_order": "Toys (Quality Control) Order, 2020",
+        "clauses": {
+            "4.1": {"title": "Normal Use and Abuse Testing", "req": "Toy shall withstand drop, torque, and tension tests without sharp edges."},
+            "4.4": {"title": "Small Parts Choking Hazard", "req": "No small parts fit entirely within small parts cylinder for children under 36 months."},
         },
     },
 }
