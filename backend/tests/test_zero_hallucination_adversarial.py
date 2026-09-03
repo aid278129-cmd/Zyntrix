@@ -280,3 +280,97 @@ async def test_full_decision_audit_trail():
     assert chain["rule_result"] == "PASS"
     assert satisfied_eval["decision_engine"] == "DETERMINISTIC_RULE_ENGINE"
     assert satisfied_eval["llm_decision"] is False
+
+
+# 11. Wrong-Standard Evidence Rejection
+def test_wrong_standard_evidence_rejected():
+    """Evidence citing an incompatible standard (e.g. IS 9873 Toys) must be rejected for IS 17526."""
+    wrong_std_snippet = (
+        "Accredited Laboratory Test Certificate: Conforming to IS 9873 (Part 1): Safety of Toys. "
+        "Product passed small parts choking cylinder test and torque test."
+    )
+    evs = extract_evidence_from_snippet(
+        snippet=wrong_std_snippet,
+        evidence_type="TEST_REPORT",
+        authority="LAB_REPORT",
+    )
+    assert len(evs) > 0
+    top_ev = evs[0]
+    assert top_ev.verification_status == "REJECTED"
+    assert top_ev.source_authority == "INCOMPATIBLE_STANDARD"
+
+    # Cannot satisfy IS 17526 requirement
+    req = {"code": "REQ-PERF-LEAK", "requirement_type": "PERFORMANCE"}
+    can_sat, status, action, exp = can_be_satisfied(req, evs)
+    assert can_sat is False
+    assert status == ComplianceStatus.MISSING_EVIDENCE
+
+
+# 12. Irrelevant Document Rejection
+def test_irrelevant_document_rejected():
+    """Commercial or utility documents (e.g. electricity bills, invoices) must be rejected."""
+    invoice_snippet = (
+        "Commercial Invoice & Payment Receipt: Factory electric utility bill payment of Rs. 14,200. "
+        "Account #9812-4412, Paid online on 15-Feb-2026. No technical or laboratory data."
+    )
+    evs = extract_evidence_from_snippet(
+        snippet=invoice_snippet,
+        evidence_type="INVOICE",
+        authority="MANUFACTURER_DECLARATION",
+    )
+    assert len(evs) > 0
+    top_ev = evs[0]
+    assert top_ev.verification_status == "REJECTED"
+    assert top_ev.source_authority == "IRRELEVANT_DOCUMENT"
+
+    req = {"code": "REQ-PERF-LEAK", "requirement_type": "PERFORMANCE"}
+    can_sat, status, action, exp = can_be_satisfied(req, evs)
+    assert can_sat is False
+    assert status == ComplianceStatus.MISSING_EVIDENCE
+
+
+# 13. All 8 Compliance Fields Present on Every Requirement
+def test_all_8_compliance_fields_present():
+    """Every compliance evaluation must populate the 8 mandatory end-to-end compliance fields."""
+    dna = ProductDNACore(
+        product_name="Test Flask",
+        category="Drinkware & Food Contact Containers",
+        description="Vacuum flask made of stainless steel",
+        materials=["stainless_steel"],
+        insulated=True,
+    )
+    req_catalog = [
+        {"id": "REQ-1", "clause_number": "4.2.1", "code": "REQ-MAT-304", "requirement_type": "MATERIAL", "description": "Grade 304 SS"},
+        {"id": "REQ-2", "clause_number": "5.2", "code": "REQ-PERF-LEAK", "requirement_type": "PERFORMANCE", "description": "Leakage test"},
+    ]
+    eval_res = evaluate_compliance_gaps("IS 17526:2021", "Title", req_catalog, dna)
+    assert len(eval_res.evaluations) == 2
+
+    for ev in eval_res.evaluations:
+        # 1. Applicable Standard
+        assert ev.applicable_standard == "IS 17526:2021"
+        # 2. Exact Clause
+        assert "Clause " in ev.exact_clause
+        # 3. Evidence Status
+        assert ev.evidence_status in ("MISSING_EVIDENCE", "VERIFIED_EVIDENCE_LINKED", "CONFLICTING_EVIDENCE", "LINKED_PENDING_VERIFICATION")
+        # 4. Evidence Source
+        assert ev.evidence_source is None or isinstance(ev.evidence_source, str)
+        # 5. Document Citation
+        assert ev.document_citation is None or isinstance(ev.document_citation, str)
+        # 6. Verification Status
+        assert ev.verification_status in ("UNVERIFIED", "VERIFIED", "REJECTED", "NOT_PROVIDED")
+        # 7. Deterministic Reason
+        assert len(ev.deterministic_reason) > 0
+        # 8. Recommended Action
+        assert ev.recommended_action is not None or ev.status == ComplianceStatus.SATISFIED
+
+
+# 14. Incomplete Product Info Forces Clarification-First Workflow
+def test_incomplete_product_info_forces_clarification():
+    """Generic description without grade or capacity must trigger blocking clarifications."""
+    text = "We produce stainless steel water bottles."
+    dna = extract_product_dna_from_text(text)
+    clarifs = detect_missing_attributes(dna)
+    attr_names = {c.attribute_name for c in clarifs}
+    assert "material_grade" in attr_names
+

@@ -21,6 +21,15 @@ class ClauseRequirementEvaluation(BaseModel):
     decision_engine: str = "DETERMINISTIC_RULE_ENGINE"
     llm_decision: bool = False
 
+    # 8 Mandatory End-to-End Compliance Fields
+    applicable_standard: str = Field(default="IS 17526:2021")
+    exact_clause: str = Field(default="")
+    evidence_status: str = Field(default="MISSING_EVIDENCE")
+    evidence_source: Optional[str] = Field(default=None)
+    document_citation: Optional[str] = Field(default=None)
+    verification_status: str = Field(default="UNVERIFIED")
+    deterministic_reason: str = Field(default="")
+
     # M7 First-Class Evidence Traceability fields
     required_evidence_types: List[str] = Field(default_factory=list)
     available_evidence: List[Dict[str, Any]] = Field(default_factory=list)
@@ -157,6 +166,21 @@ def evaluate_compliance_gaps(
         elif status == ComplianceStatus.POTENTIAL_GAP:
             gap_cnt += 1
 
+        ev_status = "MISSING_EVIDENCE"
+        if status == ComplianceStatus.SATISFIED:
+            ev_status = "VERIFIED_EVIDENCE_LINKED"
+        elif status == ComplianceStatus.CONFLICTING_EVIDENCE:
+            ev_status = "CONFLICTING_EVIDENCE"
+        elif status == ComplianceStatus.REQUIRES_EXPERT_REVIEW:
+            ev_status = "REQUIRES_EXPERT_REVIEW"
+        elif req_linked:
+            ev_status = "LINKED_PENDING_VERIFICATION"
+
+        ev_src = ev_prov.get("source_authority") if ev_prov else None
+        doc_cit = f"{ev_prov.get('document_id', 'DOC')}, Page {ev_prov.get('page_number', 1)}" if ev_prov else None
+        verif_stat = ev_prov.get("verification_status", "UNVERIFIED") if ev_prov else "NOT_PROVIDED"
+        det_reason = explanation
+
         evaluations.append(
             ClauseRequirementEvaluation(
                 requirement_id=req_id,
@@ -172,6 +196,13 @@ def evaluate_compliance_gaps(
                 evidence_ids=ev_ids,
                 decision_engine="DETERMINISTIC_RULE_ENGINE",
                 llm_decision=False,
+                applicable_standard=standard_number,
+                exact_clause=f"Clause {clause_num}",
+                evidence_status=ev_status,
+                evidence_source=ev_src,
+                document_citation=doc_cit,
+                verification_status=verif_stat,
+                deterministic_reason=det_reason,
                 required_evidence_types=spec.expected_evidence_types,
                 available_evidence=avail_evs,
                 evidence_provenance=ev_prov,

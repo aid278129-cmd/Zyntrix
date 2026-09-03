@@ -182,25 +182,28 @@ export function CompliancePassportView({ passport, onClose }) {
         </h3>
         <div className="overflow-x-auto border border-slate-800 rounded-lg">
           <table className="w-full text-left text-xs font-mono">
-            <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
+            <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 text-[11px]">
               <tr>
-                <th className="p-3">Clause</th>
+                <th className="p-3">Standard & Clause</th>
                 <th className="p-3">Requirement</th>
                 <th className="p-3">Verdict</th>
-                <th className="p-3">Evidence Citation & Source</th>
-                <th className="p-3">Evaluation Basis</th>
+                <th className="p-3">Evidence Status & Citation</th>
+                <th className="p-3">Verification</th>
+                <th className="p-3">Deterministic Reason</th>
                 <th className="p-3">Recommended Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80 bg-slate-950/60 text-slate-200">
               {passport.compliance_evaluations.map((ev, idx) => (
                 <tr key={idx} className="hover:bg-slate-900/40">
-                  <td className="p-3 font-bold text-blue-400 whitespace-nowrap">
-                    {ev.clause_number}
+                  <td className="p-3 font-bold whitespace-nowrap">
+                    <div className="text-blue-400 font-mono">{ev.applicable_standard || 'IS 17526:2021'}</div>
+                    <div className="text-slate-300 font-mono text-[11px]">Clause {ev.clause_number}</div>
+                    <div className="text-[10px] text-slate-500 font-mono">{ev.requirement_code}</div>
                   </td>
-                  <td className="p-3 font-sans">
-                    <div className="font-bold text-white">{ev.clause_title}</div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">{ev.explanation}</div>
+                  <td className="p-3 font-sans max-w-xs">
+                    <div className="font-bold text-white text-xs">{ev.clause_title}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5 leading-snug">{ev.description || ev.explanation}</div>
                   </td>
                   <td className="p-3 whitespace-nowrap">
                     <StatusBadge status={ev.status} />
@@ -208,25 +211,49 @@ export function CompliancePassportView({ passport, onClose }) {
                   <td className="p-3 whitespace-nowrap text-[11px]">
                     {ev.status === 'SATISFIED' && ev.audit_chain ? (
                       <div>
-                        <strong className="text-emerald-400 block font-mono">[{ev.audit_chain.evidence_id}]</strong>
-                        <span className="text-slate-400">{ev.audit_chain.source_authority} (p. {ev.audit_chain.page_number})</span>
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold text-[10px] block w-max">
+                          {ev.evidence_status || 'VERIFIED_LINKED'}
+                        </span>
+                        <strong className="text-emerald-400 block font-mono mt-1">[{ev.audit_chain.evidence_id}]</strong>
+                        <span className="text-slate-400 text-[10px]">{ev.audit_chain.source_authority} (p. {ev.audit_chain.page_number})</span>
                       </div>
                     ) : ev.evidence_ids && ev.evidence_ids.length > 0 ? (
-                      <span className="text-emerald-400 font-mono">{ev.evidence_ids.join(', ')}</span>
+                      <div>
+                        <span className="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 font-bold text-[10px] block w-max">
+                          {ev.evidence_status || 'PENDING'}
+                        </span>
+                        <span className="text-amber-400 font-mono text-[10px] mt-1 block">{ev.evidence_ids.join(', ')}</span>
+                      </div>
                     ) : (
-                      <span className="text-slate-500 italic">No evidence linked</span>
+                      <div>
+                        <span className="px-1.5 py-0.5 rounded bg-slate-900 text-slate-500 border border-slate-800 text-[10px] block w-max">
+                          MISSING_EVIDENCE
+                        </span>
+                        <span className="text-slate-500 italic text-[10px] mt-0.5 block">No evidence linked</span>
+                      </div>
                     )}
                   </td>
-                  <td className="p-3 text-[11px] font-sans text-slate-300">
-                    {ev.evaluation_basis || ev.measurable_condition || 'Standard Conformity Rule'}
+                  <td className="p-3 whitespace-nowrap text-[11px]">
+                    <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold ${
+                      ev.verification_status === 'VERIFIED'
+                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                        : ev.verification_status === 'REJECTED'
+                        ? 'bg-rose-950 text-rose-300 border border-rose-800'
+                        : 'bg-slate-900 text-slate-400 border border-slate-800'
+                    }`}>
+                      {ev.verification_status || (ev.status === 'SATISFIED' ? 'VERIFIED' : 'UNVERIFIED')}
+                    </span>
+                  </td>
+                  <td className="p-3 text-[11px] font-sans text-slate-300 max-w-sm leading-snug">
+                    {ev.deterministic_reason || ev.explanation}
                   </td>
                   <td className="p-3 whitespace-nowrap">
                     {ev.recommended_action ? (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800 font-mono">
                         {ev.recommended_action}
                       </span>
                     ) : (
-                      <span className="text-slate-500 text-[11px]">None</span>
+                      <span className="text-emerald-400 font-mono text-[11px]">VERIFIED_PASS</span>
                     )}
                   </td>
                 </tr>

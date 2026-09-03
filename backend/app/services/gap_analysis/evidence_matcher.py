@@ -59,9 +59,13 @@ def match_evidence_to_requirements(
         # Match evidences
         matched_evs: List[StructuredEvidence] = []
         for ev in evidences:
+            if ev.verification_status in ("REJECTED", "INVALID"):
+                continue
+            if ev.source_authority in ("INCOMPATIBLE_STANDARD", "IRRELEVANT_DOCUMENT"):
+                continue
             if ev.attribute in target_attrs:
                 matched_evs.append(ev)
-            elif clause_num and (f"clause {clause_num}" in ev.source_text.lower() or f"{clause_num}" in ev.source_text):
+            elif clause_num and (f"clause {clause_num}" in ev.source_text.lower() or f"cl. {clause_num}" in ev.source_text.lower()):
                 matched_evs.append(ev)
 
         req_evidence_map[req_id] = matched_evs

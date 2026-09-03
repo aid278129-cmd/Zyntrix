@@ -245,6 +245,10 @@ def can_be_satisfied(
         if p_type in (ProvenanceClassification.USER_CLAIM.value, ProvenanceClassification.USER_CLARIFICATION.value):
             continue
 
+        auth = str(ev_dict.get("source_authority") or ev_dict.get("authority", ""))
+        if auth in ("INCOMPATIBLE_STANDARD", "IRRELEVANT_DOCUMENT"):
+            continue
+
         verif_status = ev_dict.get("verification_status", "UNVERIFIED")
         if verif_status != "VERIFIED":
             continue

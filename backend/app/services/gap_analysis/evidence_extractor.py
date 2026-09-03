@@ -302,6 +302,55 @@ def extract_evidence_from_snippet(
                 authority=authority,
             )
         )
+    # 5. If no technical parameters matched, check for wrong-standard or irrelevant document
+    if not evidences:
+        is_wrong_std = bool(re.search(r"\bis\s*(9873|302|4151|12345|14643)\b", text_lower))
+        if is_wrong_std:
+            evidences.append(
+                StructuredEvidence(
+                    evidence_id=f"EV-WRONG-STD-{page or 1}",
+                    assessment_id=assessment_id,
+                    document_id=document_id or "DOC-INCOMPATIBLE",
+                    evidence_type="INCOMPATIBLE_STANDARD",
+                    source_type="OTHER",
+                    source_authority="INCOMPATIBLE_STANDARD",
+                    verification_status="REJECTED",
+                    extracted_claim="Document references an incompatible Indian Standard outside the assessment scope.",
+                    attribute="incompatible_standard",
+                    raw_value="INCOMPATIBLE",
+                    normalized_value=None,
+                    page_number=page,
+                    page=page,
+                    source_excerpt=clean_snippet[:250],
+                    source_text=clean_snippet[:250],
+                    extraction_method="STRUCTURED_PARSE",
+                    extraction_confidence=0.99,
+                    authority="INCOMPATIBLE_STANDARD",
+                )
+            )
+        elif any(w in text_lower for w in ["bill", "invoice", "payment", "receipt", "brochure", "marketing", "advertisement"]):
+            evidences.append(
+                StructuredEvidence(
+                    evidence_id=f"EV-IRRELEVANT-{page or 1}",
+                    assessment_id=assessment_id,
+                    document_id=document_id or "DOC-IRRELEVANT",
+                    evidence_type="IRRELEVANT_DOCUMENT",
+                    source_type="OTHER",
+                    source_authority="IRRELEVANT_DOCUMENT",
+                    verification_status="REJECTED",
+                    extracted_claim="Uploaded document contains commercial or utility text with no technical compliance test data.",
+                    attribute="irrelevant_document",
+                    raw_value="IRRELEVANT",
+                    normalized_value=None,
+                    page_number=page,
+                    page=page,
+                    source_excerpt=clean_snippet[:250],
+                    source_text=clean_snippet[:250],
+                    extraction_method="STRUCTURED_PARSE",
+                    extraction_confidence=0.99,
+                    authority="IRRELEVANT_DOCUMENT",
+                )
+            )
 
     return evidences
 
