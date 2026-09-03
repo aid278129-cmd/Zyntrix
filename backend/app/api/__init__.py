@@ -9,6 +9,7 @@ from backend.app.api.applicability import router as applicability_router
 from backend.app.api.rag import router as rag_router
 from backend.app.api.gap_analysis import router as gap_analysis_router
 from backend.app.api.citation_guard import citation_guard_router
+from backend.app.api.passport import passport_router
 
 api_router = APIRouter()
 api_router.include_router(system_router)
@@ -20,6 +21,7 @@ api_router.include_router(applicability_router)
 api_router.include_router(rag_router)
 api_router.include_router(gap_analysis_router)
 api_router.include_router(citation_guard_router)
+api_router.include_router(passport_router)
 
 __all__ = [
     "api_router",
@@ -32,4 +34,5 @@ __all__ = [
     "rag_router",
     "gap_analysis_router",
     "citation_guard_router",
+    "passport_router",
 ]
